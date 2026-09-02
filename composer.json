@@ -1,0 +1,63 @@
+{
+    "name": "jengo/auth",
+    "description": "Unified Authentication and Authorization Engine for the Jengo Framework and CodeIgniter 4, powered by Vima.",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Ian Otieno",
+            "email": "ochiengian383@gmail.com"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../base"
+        },
+        {
+            "type": "path",
+            "url": "../deps/vima/core"
+        },
+        {
+            "type": "path",
+            "url": "../deps/vima/ci4"
+        }
+    ],
+    "require": {
+        "php": ">=8.5",
+        "codeigniter4/framework": "^4.7",
+        "jengo/base": "*",
+        "vima/core": "dev-master as 1.0.0",
+        "vima/codeigniter": "dev-main as 1.0.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.5 || ^13.0",
+        "fakerphp/faker": "^1.24"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Jengo\\Auth\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/",
+            "Tests\\Support\\": "tests/_support/"
+        }
+    },
+    "extra": {
+        "codeigniter4": {
+            "registrar": [
+                "Jengo\\Auth\\Config\\Registrar"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}

@@ -1,0 +1,109 @@
+{
+  "name": "jengo/auth",
+  "description": "Unified Authentication and Authorization Engine for the Jengo framework. Provides multi-identity auth, universal guards (Bearer Token + Session Cookie auto-detection), Vima hierarchical RBAC, explicit deny precedence, model ABAC policies, audit logging, declarative PHP 8 attributes, standardized FormHandlers, and auto-generated REST endpoints.",
+  "attributes": [
+    {
+      "class": "Jengo\\Auth\\Attributes\\Authenticate",
+      "target": "Class/Method",
+      "description": "Forces authentication on the target controller or method. Defaults to Universal Guard, with optional specific guard parameter (session or token).",
+      "usage": "#[Authenticate(guard: 'token')]\nclass ApiController extends BaseController {}"
+    },
+    {
+      "class": "Jengo\\Auth\\Attributes\\Can",
+      "target": "Method",
+      "description": "Verifies that the authenticated user possesses the specified permission or passes the policy check for the target resource.",
+      "arguments": {
+        "permission": "string (The permission slug or policy action name)",
+        "resource": "string (Optional route parameter name to bind to policy)",
+        "schema": "class-string (Optional Schema class for model resolution)"
+      },
+      "usage": "#[Can('update', resource: 'id', schema: PostSchema::class)]\npublic function update(int $id) {}"
+    },
+    {
+      "class": "Jengo\\Auth\\Attributes\\Role",
+      "target": "Class/Method",
+      "description": "Restricts access to users having one or more specified roles.",
+      "usage": "#[Role('admin', 'editor')]\npublic function publish() {}"
+    },
+    {
+      "class": "Jengo\\Auth\\Attributes\\Guest",
+      "target": "Class/Method",
+      "description": "Restricts access to unauthenticated guest users (redirects logged-in users to home/dashboard).",
+      "usage": "#[Guest]\npublic function login() {}"
+    }
+  ],
+  "helpers": [
+    {
+      "name": "auth",
+      "signature": "auth(): \\Jengo\\Auth\\Support\\AuthManager",
+      "description": "Entry point for all authentication, token management, authorization checks, and RBAC user mutations."
+    },
+    {
+      "name": "vima",
+      "signature": "vima(): \\Vima\\Core\\VimaManager",
+      "description": "Direct access to the underlying Vima authorization manager."
+    }
+  ],
+  "facades": [
+    {
+      "class": "Jengo\\Auth\\Support\\Facades\\Auth",
+      "description": "Static facade accessing the Jengo AuthManager.",
+      "methods": {
+        "check": "check(): bool (Returns true if a valid user is authenticated)",
+        "user": "user(): ?User (Returns the authenticated User entity)",
+        "id": "id(): int|string|null (Returns the authenticated user ID)",
+        "login": "login(User $user, bool $remember = false): void (Manually logs in a user)",
+        "logout": "logout(): void (Logs out user and invalidates session/token)",
+        "attempt": "attempt(array $credentials, bool $remember = false): bool (Attempts credential authentication)",
+        "can": "can(string $permission, mixed $resource = null): bool (Evaluates permission/policy with explicit deny precedence)",
+        "cannot": "cannot(string $permission, mixed $resource = null): bool (Inverse of can())",
+        "authorize": "authorize(string $permission, mixed $resource = null): void (Throws AccessDeniedException if forbidden)",
+        "user_resource": "user(int|string|User $user): UserResource (Returns fluent resource manager for grants/denies)"
+      }
+    }
+  ],
+  "guards": [
+    {
+      "class": "Jengo\\Auth\\Authentication\\Authenticators\\UniversalGuard",
+      "description": "Intelligently authenticates incoming requests by detecting Bearer token headers first and falling back to session cookies."
+    },
+    {
+      "class": "Jengo\\Auth\\Authentication\\Authenticators\\TokenGuard",
+      "description": "Validates SHA-256 hashed Personal Access Tokens with custom abilities and expiration."
+    },
+    {
+      "class": "Jengo\\Auth\\Authentication\\Authenticators\\SessionGuard",
+      "description": "Stateful session guard managing user sessions, CSRF validation, and Remember-Me cookies."
+    }
+  ],
+  "commands": [
+    {
+      "name": "jengo:auth setup",
+      "description": "Run the Jengo Auth setup wizard and publish configurations."
+    },
+    {
+      "name": "jengo:auth import:shield",
+      "description": "Migrates users, identities, permissions, and tokens from CodeIgniter Shield to Jengo Auth."
+    },
+    {
+      "name": "jengo:auth grant",
+      "description": "Grant a role or direct permission to a user."
+    },
+    {
+      "name": "jengo:auth deny",
+      "description": "Explicitly deny a permission for a user (overrides all grants)."
+    },
+    {
+      "name": "jengo:auth sync",
+      "description": "Synchronize policy mappings and static permissions into the database."
+    },
+    {
+      "name": "jengo:make policy <name>",
+      "description": "Generate a new authorization Policy class."
+    },
+    {
+      "name": "jengo:make role <name>",
+      "description": "Generate a new Role with optional parent inheritance."
+    }
+  ]
+}
