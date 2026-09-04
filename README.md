@@ -1,110 +1,220 @@
 # Jengo Auth
 
-A unified, high-performance **Authentication (AuthN)** and **Vima-powered Authorization (AuthZ)** engine designed specifically for the **Jengo** framework and **CodeIgniter 4**.
+A unified authentication and authorization engine for **CodeIgniter 4** and the **Jengo Framework**, powered by **Vima**.
 
 ---
 
-## 🚀 Key Features
+## 🚀 Highlights
 
-- **Universal Guard**: Intelligently auto-detects `Authorization: Bearer <token>` for API/mobile requests, falling back to session cookies and encrypted Remember-Me tokens for Web/Inertia SPAs.
-- **Multi-Identity Architecture**: Decoupled `users` and `user_identities` supporting Email/Password, OAuth providers, Magic links, and Passkeys without modifying user schema.
-- **Full Vima AuthZ Parity**:
-  - **Explicit Deny System**: Deny rules take strict precedence over grants (`UserDeny` and `UserRoleDeny`).
-  - **Hierarchical RBAC**: Recursive parent-child role inheritance.
-  - **Direct Grants**: Granular user-level and role-level permissions.
-  - **ABAC & Model Policies**: Declarative policies matching entities and schemas.
-  - **SuperAdmin Bypass**: Instant access evaluation for designated administrator roles.
-  - **Fast Request Caching**: Zero duplicate database queries per request lifecycle.
-  - **Immutable Audit Logging**: Built-in audit trail recording security events and permission evaluations.
-- **Native Jengo Ergonomics**:
-  - Declarative PHP 8 Attributes: `#[Authenticate]`, `#[Can]`, `#[Role]`, `#[Guest]`.
-  - FormHandlers: `LoginFormHandler`, `RegisterFormHandler`, `ForgotPasswordFormHandler`, `ResetPasswordFormHandler`, `UpdatePasswordFormHandler`.
-  - Entity Obfuscation: Full integration with `BaseEntity` and Sqids integer ID obfuscation.
-  - Inertia.js SPAs: Automatic `Inertia::share('auth', ...)` user/permission state propagation.
-  - Pre-built REST API: Out-of-the-box endpoints (`/api/v1/auth/*`) with Swagger/OpenAPI support.
-- **Shield Migration Wizard**: Built-in CLI command (`php spark jengo:auth import:shield`) to migrate from CodeIgniter Shield.
+- **Universal Guard**: Auto-detects Bearer tokens for APIs and falls back to session cookies / remember-me tokens for web apps.
+- **Flexible Response Modifiers**: Switch between traditional CI4 HTML views, REST API JSON, or Inertia.js SPAs via config.
+- **Pluggable Notifications**: Route emails, SMS, magic links, and MFA codes directly or through background queues.
+- **Smart Throttling**: Multi-signal rate limiter that protects against brute-force attacks without locking out shared IPs.
+- **Vima Authorization**: Full RBAC with role hierarchies, ABAC policies, direct grants, explicit denies, and TypeScript map generation.
 
 ---
 
-## 📦 Installation
-
-Add `jengo/auth` to your composer dependencies:
+## 📦 Installation & Setup
 
 ```bash
 composer require jengo/auth
-```
-
-Run the interactive setup wizard and database migrations:
-
-```bash
 php spark jengo:auth setup
 php spark migrate
 ```
 
+> **Note**: `jengo:auth setup` automatically publishes `Config/Auth.php`, `Config/Vima.php`, `app/Libraries/Vima/Setup.php`, and registers the auth routes in `app/Config/Routes.php`.
+
 ---
 
-## 🛠 Quick Start
+## 🛣 Route Publishing (`app/Config/Routes.php`)
 
-### 1. Authentication (`auth()`)
+Publish and customize all authentication routes with a single call:
+
+```php
+// In app/Config/Routes.php
+
+// Basic publishing (default paths)
+service('auth')->routes($routes);
+
+// Custom prefix, paths, and filters
+service('auth')->routes($routes, [
+    'prefix' => 'auth', // e.g. /auth/sign-in, /auth/join
+    'paths'  => [
+        'login'    => 'sign-in',
+        'logout'   => 'sign-out',
+        'register' => 'join',
+    ],
+    'logoutMethod' => 'post', // 'post' (default) or 'get'
+]);
+
+// Register specific flows only
+service('auth')->routes($routes, [
+    'only' => ['login', 'register'], // or 'except' => ['tokens', 'magic-link']
+]);
+
+// Controller overrides & named route prefixing
+service('auth')->routes($routes, [
+    'as'          => 'admin.', // creates admin.login, admin.register, etc.
+    'controllers' => [
+        'login' => \App\Controllers\AdminLoginController::class,
+    ],
+]);
+```
+
+---
+
+## 🛡 Roles, Permissions & Syncing (Vima Workflow)
+
+### 1. Define Initial Roles & Permissions
+
+Edit `app/Libraries/Vima/Setup.php` to define your roles, hierarchy, and permissions:
+
+```php
+namespace App\Libraries\Vima;
+
+use Vima\Core\Config\Contracts\SetupProviderInterface;
+use Vima\Core\Role\Entities\Role;
+use Vima\Core\Permission\Entities\Permission;
+
+class Setup implements SetupProviderInterface
+{
+    public function get(): array
+    {
+        return [
+            'permissions' => [
+                Permission::define('post.create', 'Here is a description'),
+                Permission::define('post.edit', 'Here is a description'),
+            ],
+            'roles' => [
+                Role::define('admin', 'Here is a description')
+                ->withPermissions([
+                    'post.create',
+                    'post.edit',
+                ])
+            ]
+        ];
+    }
+}
+```
+
+### 2. Sync to Database
+
+Synchronize the definition file into your database:
+
+```bash
+php spark vima:sync
+```
+
+### 3. Generate TypeScript Mappings (Frontend / Inertia.js)
+
+Generate type-safe PHP mappers and TypeScript mapping files for frontend auto-completion:
+
+```bash
+# Generates PHP classes in App\Mappers\Vima and TypeScript definitions in resources/js/vima/
+php spark vima:maps:generate --ts
+```
+
+---
+
+## 💻 Quick Start
+
+### 1. Authentication
+
 ```php
 // Check authentication
 if (auth()->check()) {
-    $user = auth()->user(); // returns Jengo\Auth\Entities\User
+    $user   = auth()->user(); // Jengo\Auth\Entities\User
     $userId = auth()->id();
 }
 
 // Attempt login
 $result = auth()->attempt(['email' => $email, 'password' => $password], remember: true);
-if ($result->isSuccess()) {
-    // Authenticated
-}
 
-// Issue Personal Access Token for API clients
-$tokenResult = auth()->createTokenFor($user, 'mobile-app', ['posts.read', 'posts.create']);
-$plainText = $tokenResult->plainTextToken;
+// Issue Personal Access Token for API / mobile clients
+$token = auth()->createTokenFor($user, 'mobile-app', ['posts.read']);
+echo $token->plainTextToken;
 ```
 
+---
+
 ### 2. Authorization & Explicit Denies
+
 ```php
-// Permission check
-if (auth()->can('posts.publish', $post)) {
+// Permission or policy check
+if (can('posts.publish', $post)) {
     // Authorized
 }
 
-// Authorize or throw AccessDeniedException
-auth()->authorize('posts.delete', $post);
-
-// Fluent RBAC management
+// Fluent role & permission management
 auth()->user($user)->grant()->role('editor');
 auth()->user($user)->grant()->permission('reports.view');
 
-// Explicit Deny (Overrides all role grants)
-auth()->user($user)->deny()->permission('posts.publish', 'User on probation');
-
-// Undeny
-auth()->user($user)->undeny()->permission('posts.publish');
+// Explicit Deny (strictly overrides any role grant)
+auth()->user($user)->deny()->permission('posts.publish', 'Account on hold');
 ```
 
-### 3. Declarative PHP 8 Attributes
+---
+
+### 3. Declarative Attributes
+
 ```php
 namespace App\Controllers;
 
 use Jengo\Auth\Attributes\Authenticate;
 use Jengo\Auth\Attributes\Can;
 use Jengo\Auth\Attributes\Role;
-use Jengo\Auth\Attributes\Guest;
 
 #[Authenticate]
-class ArticleController extends BaseController
+class PostController extends BaseController
 {
     #[Can('posts.create')]
     public function create() { ... }
 
-    #[Can('update', resource: 'id')]
-    public function update(int $id) { ... }
-
     #[Role('admin')]
-    public function destroy(int $id) { ... }
+    public function delete(int $id) { ... }
+}
+```
+
+---
+
+### 4. Custom Notifications / Queues
+
+Swap the default email sender with your own queue or provider in `Config/Auth.php`:
+
+```php
+namespace App\Notifications;
+
+use Jengo\Auth\Contracts\NotificationSenderInterface;
+use Jengo\Auth\Entities\User;
+
+class QueuedAuthNotifier implements NotificationSenderInterface
+{
+    public function sendMagicLink(User $user, string $token, string $url): bool
+    {
+        queue('emails')->push(new SendMagicLinkJob($user->getEmail(), $url));
+        return true;
+    }
+
+    public function sendPasswordReset(User $user, string $token, string $url): bool { ... }
+    public function sendMfaCode(User $user, string $code): bool { ... }
+    public function sendActivation(User $user, string $token, string $url): bool { ... }
+    public function sendNotification(string $type, User $user, array $data = []): bool { ... }
+}
+```
+
+---
+
+### 5. Custom Guards & Drivers
+
+Register custom authentication drivers (e.g. JWT, HMAC, API Key) via `extend()` or `Config/Auth.php`:
+
+```php
+// Register a custom guard driver
+auth()->extend('jwt', fn() => new \App\Authentication\Guards\JwtGuard());
+
+// Use it explicitly or set as default in Config/Auth.php ($defaultGuard = 'jwt')
+if (auth()->guard('jwt')->check()) {
+    $user = auth()->guard('jwt')->user();
 }
 ```
 
@@ -113,22 +223,20 @@ class ArticleController extends BaseController
 ## ⚡ CLI Commands
 
 ```bash
-# Setup
+# Setup & Initial Configuration (Publishes Auth, Vima & Routes)
 php spark jengo:auth setup
 
-# Migrate from CodeIgniter Shield
+# Migrate users & credentials from CodeIgniter Shield
 php spark jengo:auth import:shield [--dry-run]
 
-# RBAC Management
-php spark jengo:auth grant <user> <role|permission>
-php spark jengo:auth deny <user> <permission|role> [reason]
-php spark jengo:auth sync
-php spark jengo:auth audit [--limit=20]
-
-# Generators
-php spark jengo:make policy <Name>
-php spark jengo:make role <name> [--parent=parentRole] [--superadmin]
-php spark jengo:make permission <name>
+# Vima Authorization & Mapping Commands (vima/codeigniter)
+php spark vima:sync                         # Syncs roles & permissions from Setup.php to DB
+php spark vima:maps:generate [--ts]         # Generates PHP & TypeScript mapping artifacts
+php spark vima:role:create <name>           # Create a role
+php spark vima:permission:create <name>     # Create a permission
+php spark vima:grant <user> <role|perm>     # Grant role or permission
+php spark vima:deny <user> <perm> [reason]  # Explicitly deny permission
+php spark vima:make:policy <Name>           # Scaffold ABAC policy
 ```
 
 ---

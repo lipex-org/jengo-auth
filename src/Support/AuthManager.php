@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Jengo\Auth\Support;
 
+use CodeIgniter\Router\RouteCollection;
 use Config\Services;
 use DateTimeInterface;
+use InvalidArgumentException;
 use Jengo\Auth\Authentication\Authenticators\SessionGuard;
 use Jengo\Auth\Authentication\Authenticators\TokenGuard;
 use Jengo\Auth\Authentication\Authenticators\UniversalGuard;
@@ -14,10 +16,12 @@ use Jengo\Auth\Authentication\DTOs\AuthResult;
 use Jengo\Auth\Authentication\DTOs\TokenResult;
 use Jengo\Auth\Authentication\Password\PasswordHasher;
 use Jengo\Auth\Authentication\Throttling\RateLimiter;
+use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Entities\User;
 use Jengo\Auth\Models\UserIdentityModel;
 use Jengo\Auth\Models\UserModel;
 use Jengo\Auth\Models\UserTokenModel;
+use Jengo\Auth\Modifiers\StandardViewModifier;
 use Vima\Core\Permission\Fluent\PermissionResource;
 use Vima\Core\Permission\Services\PermissionService;
 use Vima\Core\Policy\Services\PolicyRegistry;
@@ -29,7 +33,9 @@ use Vima\Core\VimaManager;
 
 class AuthManager
 {
-    protected UniversalGuard $universalGuard;
+    protected ?string $defaultGuard = null;
+    protected array $guards = [];
+    protected array $customCreators = [];
     protected PasswordHasher $hasher;
     protected RateLimiter $rateLimiter;
     protected UserModel $userModel;
@@ -37,7 +43,7 @@ class AuthManager
     protected UserTokenModel $tokenModel;
 
     public function __construct(
-        ?UniversalGuard $universalGuard = null,
+        ?GuardInterface $defaultGuardInstance = null,
         ?PasswordHasher $hasher = null,
         ?RateLimiter $rateLimiter = null,
         ?UserModel $userModel = null,
@@ -49,10 +55,103 @@ class AuthManager
         $this->tokenModel     = $tokenModel ?? new UserTokenModel();
         $this->hasher         = $hasher ?? new PasswordHasher();
         $this->rateLimiter    = $rateLimiter ?? new RateLimiter();
-        $this->universalGuard = $universalGuard ?? new UniversalGuard(
-            new TokenGuard($this->userModel),
-            new SessionGuard($this->userModel, $this->identityModel, $this->hasher)
-        );
+
+        if ($defaultGuardInstance !== null) {
+            $this->guards['universal'] = $defaultGuardInstance;
+        }
+    }
+
+    /**
+     * Register a custom guard creator closure.
+     */
+    public function extend(string $name, callable $callback): self
+    {
+        $this->customCreators[$name] = $callback;
+        unset($this->guards[$name]);
+
+        return $this;
+    }
+
+    /**
+     * Explicitly set a guard instance for a given name.
+     */
+    public function setGuard(string $name, GuardInterface $guard): self
+    {
+        $this->guards[$name] = $guard;
+
+        return $this;
+    }
+
+    /**
+     * Get the default guard name.
+     */
+    public function getDefaultDriver(): string
+    {
+        return $this->defaultGuard ?? config('Auth')->defaultGuard ?? 'universal';
+    }
+
+    /**
+     * Set the default guard name.
+     */
+    public function setDefaultDriver(string $name): self
+    {
+        $this->defaultGuard = $name;
+
+        return $this;
+    }
+
+    /**
+     * Switch or resolve a specific guard driver.
+     */
+    public function guard(?string $name = null): GuardInterface
+    {
+        $name = $name ?? $this->getDefaultDriver();
+
+        // Standardize common aliases
+        $normalizedName = match (strtolower($name)) {
+            'web'            => 'session',
+            'api', 'bearer'  => 'token',
+            default          => $name,
+        };
+
+        if (isset($this->guards[$normalizedName])) {
+            return $this->guards[$normalizedName];
+        }
+
+        // 1. Check custom creators (auth()->extend('jwt', fn() => ...))
+        if (isset($this->customCreators[$normalizedName])) {
+            return $this->guards[$normalizedName] = ($this->customCreators[$normalizedName])($this);
+        }
+
+        // 2. Built-in Session Guard
+        if ($normalizedName === 'session') {
+            return $this->guards['session'] = new SessionGuard($this->userModel, $this->identityModel, $this->hasher);
+        }
+
+        // 3. Built-in Token Guard
+        if ($normalizedName === 'token') {
+            return $this->guards['token'] = new TokenGuard($this->userModel);
+        }
+
+        // 4. Built-in Universal Guard
+        if ($normalizedName === 'universal') {
+            $tokenGuard = $this->guard('token');
+            $sessionGuard = $this->guard('session');
+
+            return $this->guards['universal'] = new UniversalGuard(
+                $tokenGuard instanceof TokenGuard ? $tokenGuard : null,
+                $sessionGuard instanceof SessionGuard ? $sessionGuard : null
+            );
+        }
+
+        // 5. Config-registered custom guard class mapping
+        $configGuards = (array) (config('Auth')->guards ?? []);
+        if (isset($configGuards[$normalizedName]) && class_exists($configGuards[$normalizedName])) {
+            $class = $configGuards[$normalizedName];
+            return $this->guards[$normalizedName] = new $class();
+        }
+
+        throw new InvalidArgumentException("Authentication guard [{$name}] is not defined.");
     }
 
     /**
@@ -68,7 +167,7 @@ class AuthManager
      */
     public function check(): bool
     {
-        return $this->universalGuard->check();
+        return $this->guard()->check();
     }
 
     /**
@@ -76,7 +175,7 @@ class AuthManager
      */
     public function guest(): bool
     {
-        return $this->universalGuard->guest();
+        return $this->guard()->guest();
     }
 
     /**
@@ -84,7 +183,7 @@ class AuthManager
      */
     public function currentUser(): ?User
     {
-        return $this->universalGuard->user();
+        return $this->guard()->user();
     }
 
     /**
@@ -92,7 +191,7 @@ class AuthManager
      */
     public function id(): ?int
     {
-        return $this->universalGuard->id();
+        return $this->guard()->id();
     }
 
     /**
@@ -100,7 +199,7 @@ class AuthManager
      */
     public function attempt(array $credentials = [], bool $remember = false): AuthResult
     {
-        return $this->universalGuard->attempt($credentials, $remember);
+        return $this->guard()->attempt($credentials, $remember);
     }
 
     /**
@@ -108,7 +207,7 @@ class AuthManager
      */
     public function login(User $user, bool $remember = false): void
     {
-        $this->universalGuard->login($user, $remember);
+        $this->guard()->login($user, $remember);
     }
 
     /**
@@ -116,18 +215,20 @@ class AuthManager
      */
     public function logout(): void
     {
-        $this->universalGuard->logout();
+        $this->guard()->logout();
     }
 
     /**
-     * Switch or get specific guard.
+     * Set the active user on the current guard.
      */
-    public function guard(?string $name = null): GuardInterface
+    public function setUser(User $user): self
     {
-        if ($name === null) {
-            return $this->universalGuard;
+        $guard = $this->guard();
+        if (method_exists($guard, 'setUser')) {
+            $guard->setUser($user);
         }
-        return $this->universalGuard->guard($name);
+
+        return $this;
     }
 
     /**
@@ -137,8 +238,7 @@ class AuthManager
     {
         $user = null;
 
-        // If arguments has a User passed or we resolve current user
-        if (!empty($arguments) && $arguments[count($arguments) - 1] instanceof User) {
+        if (! empty($arguments) && $arguments[count($arguments) - 1] instanceof User) {
             $user = array_pop($arguments);
         } else {
             $user = $this->currentUser();
@@ -165,7 +265,7 @@ class AuthManager
     public function authorize(string $permission, mixed ...$arguments): void
     {
         $user = null;
-        if (!empty($arguments) && $arguments[count($arguments) - 1] instanceof User) {
+        if (! empty($arguments) && $arguments[count($arguments) - 1] instanceof User) {
             $user = array_pop($arguments);
         } else {
             $user = $this->currentUser();
@@ -180,8 +280,6 @@ class AuthManager
 
     /**
      * User access / Fluent resource manager.
-     * If called with no arguments, returns current authenticated User entity.
-     * If called with a User, integer ID, or string ID, returns Vima UserResource.
      */
     public function user(mixed $user = null): mixed
     {
@@ -261,7 +359,7 @@ class AuthManager
     }
 
     /**
-     * Create token for user.
+     * Create personal access token for user.
      */
     public function createTokenFor(
         User $user,
@@ -269,26 +367,48 @@ class AuthManager
         array $abilities = ['*'],
         ?DateTimeInterface $expiresAt = null
     ): TokenResult {
-        return $this->universalGuard->getTokenGuard()->createToken($user, $name, $abilities, $expiresAt);
+        $tokenGuard = $this->guard('token');
+        if ($tokenGuard instanceof TokenGuard) {
+            return $tokenGuard->createToken($user, $name, $abilities, $expiresAt);
+        }
+
+        throw new \RuntimeException("Current token guard does not support personal access token generation.");
     }
 
     /**
      * Publish standard auth routes to a CodeIgniter route collection.
      */
-    public function routes(\CodeIgniter\Router\RouteCollection $routes, array $options = []): void
+    public function routes(RouteCollection $routes, array $options = []): void
     {
         RouteRegistrar::routes($routes, $options);
     }
 
+    protected ?ResponseHandler $responseHandler = null;
+
     /**
-     * Render an auth action response through the configured ResponseModifier.
+     * Get the ResponseHandler instance.
      */
-    public function renderResponse(string $action, \Jengo\Auth\DTOs\AuthResponseData $data, ?\CodeIgniter\HTTP\RequestInterface $request = null): \CodeIgniter\HTTP\ResponseInterface
+    public function getResponseHandler(): ResponseHandler
     {
-        $modifierClass = config('Auth')->responseModifier ?? \Jengo\Auth\Modifiers\StandardViewModifier::class;
-        $modifier = new $modifierClass();
-        $req = $request ?? Services::request();
-        return $modifier->modify($action, $data, $req);
+        return $this->responseHandler ??= new ResponseHandler();
+    }
+
+    /**
+     * Set a custom ResponseHandler instance.
+     */
+    public function setResponseHandler(ResponseHandler $responseHandler): self
+    {
+        $this->responseHandler = $responseHandler;
+
+        return $this;
+    }
+
+    /**
+     * Render an auth action response through the configured ResponseHandler.
+     */
+    public function renderResponse(string $action, AuthResponseData $data, ?\CodeIgniter\HTTP\RequestInterface $request = null): \CodeIgniter\HTTP\ResponseInterface
+    {
+        return $this->getResponseHandler()->render($action, $data, $request);
     }
 
     protected ?\Jengo\Auth\Contracts\NotificationSenderInterface $notifier = null;

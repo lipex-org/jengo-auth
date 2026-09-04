@@ -33,11 +33,7 @@ class UniversalGuard implements GuardInterface
 
     public function guard(string $name): GuardInterface
     {
-        return match ($name) {
-            'token', 'api', 'bearer' => $this->tokenGuard,
-            'session', 'web'         => $this->sessionGuard,
-            default                  => $this,
-        };
+        return auth()->guard($name);
     }
 
     public function check(): bool

@@ -7,6 +7,8 @@ namespace Jengo\Auth\Controllers;
 use CodeIgniter\Events\Events;
 use CodeIgniter\HTTP\ResponseInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Auth\Forms\MagicLinkFormHandler;
+use Jengo\Base\Attributes\Validate;
 
 class MagicLinkController extends BaseAuthController
 {
@@ -26,25 +28,16 @@ class MagicLinkController extends BaseAuthController
         return $this->renderResponse('magic_link.view', $data);
     }
 
+    #[Validate(MagicLinkFormHandler::class)]
     public function sendLink(): ResponseInterface
     {
         if ($disabled = $this->ensureFeatureEnabled('allowMagicLink', 'magic_link')) {
             return $disabled;
         }
 
-        $payload = $this->extractPayload();
-        $email = $payload['email'] ?? null;
-
-        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $data = new AuthResponseData(
-                action: 'magic_link.validation_failed',
-                status: 'error',
-                statusCode: 422,
-                message: 'Valid email is required.',
-                errors: ['email' => 'Valid email is required.']
-            );
-            return $this->renderResponse('magic_link.validation_failed', $data);
-        }
+        /** @var MagicLinkFormHandler $form */
+        $form = form();
+        $email = $form->getEmail();
 
         $auth = auth();
         $identity = $auth->getUserIdentityModel()->where(['type' => 'email_password', 'name' => $email])->first();
@@ -53,6 +46,12 @@ class MagicLinkController extends BaseAuthController
         if ($identity) {
             $user = $auth->getUserModel()->find($identity->user_id);
             if ($user) {
+                // Purge previous unused magic link tokens for this user
+                $auth->getUserIdentityModel()
+                    ->where('user_id', $user->id)
+                    ->where('type', 'magic_link_token')
+                    ->delete();
+
                 $token = bin2hex(random_bytes(24));
 
                 $auth->getUserIdentityModel()->insert([
@@ -63,7 +62,7 @@ class MagicLinkController extends BaseAuthController
                     'expires' => date('Y-m-d H:i:s', time() + 900), // 15 mins
                 ]);
 
-                $verifyUrl = site_url("magic-link/verify/{$token}");
+                $verifyUrl = auth_url('magic-link.verify', $token);
 
                 // Send magic link notification through pluggable notifier
                 $auth->getNotifier()->sendMagicLink($user, $token, $verifyUrl);

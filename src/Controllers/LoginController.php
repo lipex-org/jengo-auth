@@ -8,6 +8,8 @@ use CodeIgniter\Events\Events;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Auth\Forms\LoginFormHandler;
+use Jengo\Base\Attributes\Validate;
 
 class LoginController extends BaseAuthController
 {
@@ -35,40 +37,33 @@ class LoginController extends BaseAuthController
     }
 
     /**
-     * Process login credentials (supports JSON and POST form bodies).
+     * Process login credentials using #[Validate] attribute and form() helper.
      */
+    #[Validate(LoginFormHandler::class)]
     public function attemptLogin(): ResponseInterface
     {
         if ($disabled = $this->ensureFeatureEnabled('allowLogin', 'login')) {
             return $disabled;
         }
 
-        $payload = $this->extractPayload();
-        $auth = auth();
+        /** @var LoginFormHandler $form */
+        $form = form();
+        $identifier = $form->getIdentifier();
+        $password = $form->getPassword();
 
-        $identifier = $payload['email'] ?? $payload['username'] ?? null;
-        $password = $payload['password'] ?? null;
-        
         $remember = false;
         if ($this->isFeatureEnabled('allowRemembering')) {
-            $remember = (bool) ($payload['remember'] ?? false);
+            $remember = $form->isRemember();
         }
 
-        if (! $identifier || ! $password) {
-            $data = new AuthResponseData(
-                action: 'login.validation_failed',
-                status: 'error',
-                statusCode: 422,
-                message: 'Email/Username and Password are required.',
-                errors: ['identifier' => 'Identifier is required', 'password' => 'Password is required']
-            );
-            return $this->renderResponse('login.validation_failed', $data);
-        }
+        $auth = auth();
 
-        // Rate limiting with composite guest fingerprint (identifier + IP + client entropy)
-        $throttleKey = $auth->getRateLimiter()->forGuest($this->request, (string) $identifier, 'login');
+        // Dual-bucket rate limiting (Account throttle + IP/client composite throttle)
+        $rateLimiter = $auth->getRateLimiter();
         $maxAttempts = config('Auth')->throttling['maxAttempts'] ?? 5;
-        if ($auth->getRateLimiter()->tooManyAttempts($throttleKey, $maxAttempts)) {
+        $decaySeconds = (int) ((config('Auth')->throttling['decayMinutes'] ?? 1) * 60);
+
+        if ($rateLimiter->isThrottled($this->request, (string) $identifier, 'login', $maxAttempts, $decaySeconds)) {
             $data = new AuthResponseData(
                 action: 'login.throttled',
                 status: 'error',
@@ -85,29 +80,33 @@ class LoginController extends BaseAuthController
         ], $remember);
 
         if (! $result->isSuccess()) {
-            $auth->getRateLimiter()->hit($throttleKey, 60);
+            $rateLimiter->recordFailure($this->request, (string) $identifier, 'login', $decaySeconds);
             Events::trigger('failedLogin', ['identifier' => $identifier, 'ip' => $this->request->getIPAddress()]);
 
             $data = new AuthResponseData(
                 action: 'login.failed',
                 status: 'error',
                 statusCode: 401,
-                message: $result->getMessage() ?? 'Invalid credentials.',
-                errors: ['credentials' => $result->getMessage() ?? 'Invalid credentials.']
+                message: $result->error ?? 'Invalid credentials.',
+                errors: ['credentials' => $result->error ?? 'Invalid credentials.']
             );
             return $this->renderResponse('login.failed', $data);
         }
 
-        $auth->getRateLimiter()->clear($throttleKey);
+        $rateLimiter->recordSuccess($this->request, (string) $identifier, 'login');
         $user = $result->getUser();
 
-        // Check if post-login auth action is configured (e.g. MFA)
-        $actionClass = config('Auth')->actions['login'] ?? null;
-        if ($actionClass && class_exists($actionClass)) {
+        // Check if post-login auth action pipeline is configured (e.g. MFA, Terms)
+        $configuredActions = config('Auth')->actions['login'] ?? null;
+        $actions = is_array($configuredActions) ? array_values(array_filter($configuredActions)) : ($configuredActions ? [$configuredActions] : []);
+        $validActions = array_values(array_filter($actions, fn($c) => is_string($c) && class_exists($c)));
+
+        if ($validActions !== []) {
             $session = Services::session();
             $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
             $session->set($sessionKey, $user->id);
-            $session->set('auth_pending_action', $actionClass);
+            $session->set('auth_pending_actions', $validActions);
+            $session->set('auth_pending_action', $validActions[0]);
 
             // Log user out of full auth until action completes
             $auth->logout();
@@ -117,7 +116,7 @@ class LoginController extends BaseAuthController
                 status: 'info',
                 statusCode: 200,
                 message: 'Additional authentication action required.',
-                redirectTo: '/auth/action/show',
+                redirectTo: auth_url('auth.action.show'),
                 user: $user
             );
             return $this->renderResponse('login.action_required', $data);
@@ -155,7 +154,7 @@ class LoginController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Logged out successfully.',
-            redirectTo: config('Auth')->redirects['logout'] ?? '/login'
+            redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login')
         );
 
         return $this->renderResponse('logout.success', $data);

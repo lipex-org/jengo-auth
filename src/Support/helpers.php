@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Config\Services;
+use Jengo\Auth\Config\Services;
 use Jengo\Auth\Support\AuthManager;
 use Vima\Core\VimaManager;
 
@@ -63,5 +63,37 @@ if (!function_exists('can_all')) {
             }
         }
         return true;
+    }
+}
+
+if (!function_exists('auth_url')) {
+    /**
+     * Resolves a named auth route URL using url_to(), falling back gracefully to site_url if routes have not been registered.
+     */
+    function auth_url(string $routeName, mixed ...$params): string
+    {
+        try {
+            $url = url_to($routeName, ...$params);
+            if ($url) {
+                return $url;
+            }
+        } catch (\Throwable) {
+            // Fallback for standalone invocations
+        }
+
+        $fallbacks = [
+            'login'              => 'login',
+            'logout'             => 'logout',
+            'register'           => 'register',
+            'forgot-password'    => 'forgot-password',
+            'reset-password'     => 'reset-password' . (!empty($params) ? '/' . $params[0] : ''),
+            'magic-link'         => 'magic-link',
+            'magic-link.verify'  => 'magic-link/verify' . (!empty($params) ? '/' . $params[0] : ''),
+            'auth.action.show'   => 'auth/action/show',
+            'auth.action.handle' => 'auth/action/handle',
+            'tokens.index'       => 'api/tokens',
+        ];
+
+        return site_url($fallbacks[$routeName] ?? $routeName);
     }
 }

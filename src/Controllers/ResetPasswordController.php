@@ -7,6 +7,8 @@ namespace Jengo\Auth\Controllers;
 use CodeIgniter\Events\Events;
 use CodeIgniter\HTTP\ResponseInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Auth\Forms\ResetPasswordFormHandler;
+use Jengo\Base\Attributes\Validate;
 
 class ResetPasswordController extends BaseAuthController
 {
@@ -31,27 +33,17 @@ class ResetPasswordController extends BaseAuthController
         return $this->renderResponse('reset_password.view', $data);
     }
 
+    #[Validate(ResetPasswordFormHandler::class)]
     public function attemptReset(): ResponseInterface
     {
         if ($disabled = $this->ensureFeatureEnabled('allowPasswordReset', 'reset_password')) {
             return $disabled;
         }
 
-        $payload = $this->extractPayload();
-        $token = $payload['token'] ?? null;
-        $password = $payload['password'] ?? null;
-        $passwordConfirm = $payload['password_confirm'] ?? null;
-
-        if (! $token || ! $password || strlen($password) < 8 || ($passwordConfirm !== null && $password !== $passwordConfirm)) {
-            $data = new AuthResponseData(
-                action: 'reset_password.validation_failed',
-                status: 'error',
-                statusCode: 422,
-                message: 'Invalid password or mismatched confirmation.',
-                errors: ['password' => 'Password must be at least 8 characters and match confirmation.']
-            );
-            return $this->renderResponse('reset_password.validation_failed', $data);
-        }
+        /** @var ResetPasswordFormHandler $form */
+        $form = form();
+        $token = $form->getToken();
+        $password = $form->getPassword();
 
         $auth = auth();
         $tokenHash = hash('sha256', $token);
@@ -90,7 +82,7 @@ class ResetPasswordController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Password reset successfully. You can now log in.',
-            redirectTo: config('Auth')->redirects['login'] ?? '/login',
+            redirectTo: config('Auth')->redirects['login'] ?? auth_url('login'),
             user: $user
         );
 

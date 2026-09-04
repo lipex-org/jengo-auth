@@ -6,7 +6,7 @@ namespace Jengo\Auth\Forms;
 
 use Jengo\Base\Validation\FormHandler;
 
-class ForgotPasswordFormHandler extends FormHandler
+class MagicLinkFormHandler extends FormHandler
 {
     protected array $rules = [
         'email' => 'required|valid_email',

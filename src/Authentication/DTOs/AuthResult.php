@@ -29,4 +29,14 @@ class AuthResult
     {
         return $this->error;
     }
+
+    public static function success(?User $user = null, array $extra = []): self
+    {
+        return new self(success: true, user: $user, extra: $extra);
+    }
+
+    public static function failure(?string $error = null, array $extra = []): self
+    {
+        return new self(success: false, error: $error, extra: $extra);
+    }
 }

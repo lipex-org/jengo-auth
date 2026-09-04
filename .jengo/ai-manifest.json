@@ -1,109 +1,205 @@
 {
   "name": "jengo/auth",
-  "description": "Unified Authentication and Authorization Engine for the Jengo framework. Provides multi-identity auth, universal guards (Bearer Token + Session Cookie auto-detection), Vima hierarchical RBAC, explicit deny precedence, model ABAC policies, audit logging, declarative PHP 8 attributes, standardized FormHandlers, and auto-generated REST endpoints.",
+  "description": "Unified Authentication and Authorization Engine for CodeIgniter 4 and the Jengo Framework, powered by Vima.",
+  "version": "1.0.0",
+  "services": [
+    {
+      "name": "auth",
+      "class": "Jengo\\Auth\\Support\\AuthManager",
+      "description": "Primary authentication and identity manager providing fluent auth checks, credential verification, token generation, and response dispatching."
+    },
+    {
+      "name": "vima",
+      "class": "Vima\\Core\\VimaManager",
+      "description": "Underlying Vima access control manager providing RBAC, ABAC policies, explicit denies, and audit logging."
+    }
+  ],
+  "guards": [
+    {
+      "interface": "Jengo\\Auth\\Authentication\\Contracts\\GuardInterface",
+      "description": "Base contract for authentication drivers. Developers can register custom drivers via auth()->extend('name', fn() => new CustomGuard()) or Config/Auth.php ($guards mapping)."
+    },
+    {
+      "class": "Jengo\\Auth\\Authentication\\Authenticators\\UniversalGuard",
+      "description": "Auto-detects Bearer tokens for APIs and falls back to session cookies and encrypted remember-me tokens for web."
+    },
+    {
+      "class": "Jengo\\Auth\\Authentication\\Authenticators\\SessionGuard",
+      "description": "Stateful session authenticator with remember-me cookie recall."
+    },
+    {
+      "class": "Jengo\\Auth\\Authentication\\Authenticators\\TokenGuard",
+      "description": "Stateless Personal Access Token authenticator supporting token hashing and ability checks."
+    }
+  ],
+  "forms": [
+    {
+      "class": "Jengo\\Auth\\Forms\\LoginFormHandler",
+      "description": "FormHandler for login attempts with identifier resolution and remember-me parsing."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\RegisterFormHandler",
+      "description": "FormHandler for registration validation with confirmation checks and email normalization."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\ForgotPasswordFormHandler",
+      "description": "FormHandler for password reset request validation."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\ResetPasswordFormHandler",
+      "description": "FormHandler for new password submissions with token and confirmation matching."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\MagicLinkFormHandler",
+      "description": "FormHandler for magic link request validation."
+    }
+  ],
+  "response_handling": {
+    "class": "Jengo\\Auth\\Support\\ResponseHandler",
+    "description": "Centralized response orchestrator scaffolding active ResponseModifier detection, 404 masked responses, 422 validation failure generation, and jengo.form.failed event handling."
+  },
+  "modifiers": [
+    {
+      "class": "Jengo\\Auth\\Modifiers\\StandardViewModifier",
+      "description": "Default modifier rendering traditional CodeIgniter 4 HTML view templates and standard 302 flash redirects."
+    },
+    {
+      "class": "Jengo\\Auth\\Modifiers\\JsonModifier",
+      "description": "API modifier returning structured REST API JSON responses ({status, message, data, user})."
+    },
+    {
+      "class": "Jengo\\Auth\\Modifiers\\InertiaModifier",
+      "description": "SPA modifier returning Inertia::render() components and Inertia redirects with shared props."
+    }
+  ],
+  "actions": [
+    {
+      "class": "Jengo\\Auth\\Actions\\Email2FA",
+      "description": "Two-factor authentication challenge sending a time-sensitive 6-digit verification code via email."
+    },
+    {
+      "class": "Jengo\\Auth\\Actions\\EmailActivator",
+      "description": "Post-registration account activation challenge verifying the user's email before granting active status."
+    }
+  ],
+  "notifiers": [
+    {
+      "interface": "Jengo\\Auth\\Contracts\\NotificationSenderInterface",
+      "description": "Contract for pluggable notification dispatchers. Allows external queueing or third-party email/SMS providers without modifying controllers."
+    },
+    {
+      "class": "Jengo\\Auth\\Notifications\\DefaultEmailNotifier",
+      "description": "Built-in email sender using CodeIgniter's email service and responsive HTML templates."
+    },
+    {
+      "class": "Jengo\\Auth\\Notifications\\ArrayNotifier",
+      "description": "In-memory notification sink for unit testing and local inspection."
+    }
+  ],
+  "controllers": [
+    {
+      "class": "Jengo\\Auth\\Controllers\\LoginController",
+      "description": "Single-responsibility login and logout controller using #[Validate(LoginFormHandler::class)]."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\RegisterController",
+      "description": "Single-responsibility user registration controller using #[Validate(RegisterFormHandler::class)]."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\ForgotPasswordController",
+      "description": "Password reset request controller using #[Validate(ForgotPasswordFormHandler::class)]."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\ResetPasswordController",
+      "description": "Password update controller using #[Validate(ResetPasswordFormHandler::class)]."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\MagicLinkController",
+      "description": "Passwordless one-click sign-in controller using #[Validate(MagicLinkFormHandler::class)]."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\ActionController",
+      "description": "Post-auth action controller (e.g. 2FA/MFA) enforcing strict 404 responses on failures."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\TokenController",
+      "description": "Personal access token lifecycle management controller."
+    }
+  ],
+  "rate_limiting": {
+    "class": "Jengo\\Auth\\Authentication\\Throttling\\RateLimiter",
+    "description": "Multi-signal rate limiter that keys authenticated requests by user_id, and guests by target account, IP address, and browser/device fingerprint."
+  },
   "attributes": [
     {
       "class": "Jengo\\Auth\\Attributes\\Authenticate",
-      "target": "Class/Method",
-      "description": "Forces authentication on the target controller or method. Defaults to Universal Guard, with optional specific guard parameter (session or token).",
-      "usage": "#[Authenticate(guard: 'token')]\nclass ApiController extends BaseController {}"
-    },
-    {
-      "class": "Jengo\\Auth\\Attributes\\Can",
-      "target": "Method",
-      "description": "Verifies that the authenticated user possesses the specified permission or passes the policy check for the target resource.",
-      "arguments": {
-        "permission": "string (The permission slug or policy action name)",
-        "resource": "string (Optional route parameter name to bind to policy)",
-        "schema": "class-string (Optional Schema class for model resolution)"
-      },
-      "usage": "#[Can('update', resource: 'id', schema: PostSchema::class)]\npublic function update(int $id) {}"
-    },
-    {
-      "class": "Jengo\\Auth\\Attributes\\Role",
-      "target": "Class/Method",
-      "description": "Restricts access to users having one or more specified roles.",
-      "usage": "#[Role('admin', 'editor')]\npublic function publish() {}"
+      "description": "Requires an authenticated user session or token."
     },
     {
       "class": "Jengo\\Auth\\Attributes\\Guest",
-      "target": "Class/Method",
-      "description": "Restricts access to unauthenticated guest users (redirects logged-in users to home/dashboard).",
-      "usage": "#[Guest]\npublic function login() {}"
+      "description": "Requires an unauthenticated guest (redirects authenticated users to home)."
+    },
+    {
+      "class": "Jengo\\Auth\\Attributes\\Role",
+      "description": "Requires the user to possess specific Vima roles."
+    },
+    {
+      "class": "Jengo\\Auth\\Attributes\\Can",
+      "description": "Requires the user to pass a Vima permission or ABAC policy check."
+    }
+  ],
+  "setup_providers": {
+    "interface": "Vima\\Core\\Config\\Contracts\\SetupProviderInterface",
+    "example_file": "app/Libraries/Vima/Setup.php",
+    "description": "Setup classes implementing get(): array returning permissions (via Permission::define('name', 'description')) and roles (via Role::define('name', 'description')->withPermissions([...])) synced into DB via 'php spark vima:sync'."
+  },
+  "commands": [
+    {
+      "signature": "jengo:auth import:shield",
+      "description": "Imports users, password hashes, and identities from CodeIgniter Shield into Jengo Auth and Vima."
+    },
+    {
+      "signature": "jengo:auth setup",
+      "description": "Runs interactive setup for Auth & Vima, publishing configs, setup classes, and registering routes."
+    },
+    {
+      "signature": "vima:sync",
+      "description": "Synchronizes roles, hierarchy, and permissions defined in app/Libraries/Vima/Setup.php into the database."
+    },
+    {
+      "signature": "vima:maps:generate [--ts]",
+      "description": "Generates PHP permission/role mapper classes and TypeScript definition maps for frontend auto-completion."
     }
   ],
   "helpers": [
     {
       "name": "auth",
-      "signature": "auth(): \\Jengo\\Auth\\Support\\AuthManager",
-      "description": "Entry point for all authentication, token management, authorization checks, and RBAC user mutations."
+      "signature": "auth(): Jengo\\Auth\\Support\\AuthManager",
+      "description": "Access the global authentication manager."
     },
     {
       "name": "vima",
-      "signature": "vima(): \\Vima\\Core\\VimaManager",
-      "description": "Direct access to the underlying Vima authorization manager."
+      "signature": "vima(): Vima\\Core\\VimaManager",
+      "description": "Access the global Vima authorization manager."
+    },
+    {
+      "name": "can",
+      "signature": "can(string $permission, mixed ...$args): bool",
+      "description": "Check if current user can perform permission or pass policy."
+    },
+    {
+      "name": "can_any",
+      "signature": "can_any(array $permissions, mixed ...$args): bool",
+      "description": "Check if current user has any of the given permissions."
+    },
+    {
+      "name": "can_all",
+      "signature": "can_all(array $permissions, mixed ...$args): bool",
+      "description": "Check if current user has all of the given permissions."
     }
   ],
-  "facades": [
-    {
-      "class": "Jengo\\Auth\\Support\\Facades\\Auth",
-      "description": "Static facade accessing the Jengo AuthManager.",
-      "methods": {
-        "check": "check(): bool (Returns true if a valid user is authenticated)",
-        "user": "user(): ?User (Returns the authenticated User entity)",
-        "id": "id(): int|string|null (Returns the authenticated user ID)",
-        "login": "login(User $user, bool $remember = false): void (Manually logs in a user)",
-        "logout": "logout(): void (Logs out user and invalidates session/token)",
-        "attempt": "attempt(array $credentials, bool $remember = false): bool (Attempts credential authentication)",
-        "can": "can(string $permission, mixed $resource = null): bool (Evaluates permission/policy with explicit deny precedence)",
-        "cannot": "cannot(string $permission, mixed $resource = null): bool (Inverse of can())",
-        "authorize": "authorize(string $permission, mixed $resource = null): void (Throws AccessDeniedException if forbidden)",
-        "user_resource": "user(int|string|User $user): UserResource (Returns fluent resource manager for grants/denies)"
-      }
-    }
-  ],
-  "guards": [
-    {
-      "class": "Jengo\\Auth\\Authentication\\Authenticators\\UniversalGuard",
-      "description": "Intelligently authenticates incoming requests by detecting Bearer token headers first and falling back to session cookies."
-    },
-    {
-      "class": "Jengo\\Auth\\Authentication\\Authenticators\\TokenGuard",
-      "description": "Validates SHA-256 hashed Personal Access Tokens with custom abilities and expiration."
-    },
-    {
-      "class": "Jengo\\Auth\\Authentication\\Authenticators\\SessionGuard",
-      "description": "Stateful session guard managing user sessions, CSRF validation, and Remember-Me cookies."
-    }
-  ],
-  "commands": [
-    {
-      "name": "jengo:auth setup",
-      "description": "Run the Jengo Auth setup wizard and publish configurations."
-    },
-    {
-      "name": "jengo:auth import:shield",
-      "description": "Migrates users, identities, permissions, and tokens from CodeIgniter Shield to Jengo Auth."
-    },
-    {
-      "name": "jengo:auth grant",
-      "description": "Grant a role or direct permission to a user."
-    },
-    {
-      "name": "jengo:auth deny",
-      "description": "Explicitly deny a permission for a user (overrides all grants)."
-    },
-    {
-      "name": "jengo:auth sync",
-      "description": "Synchronize policy mappings and static permissions into the database."
-    },
-    {
-      "name": "jengo:make policy <name>",
-      "description": "Generate a new authorization Policy class."
-    },
-    {
-      "name": "jengo:make role <name>",
-      "description": "Generate a new Role with optional parent inheritance."
-    }
-  ]
+  "routing": {
+    "class": "Jengo\\Auth\\Support\\RouteRegistrar",
+    "description": "Advanced route publishing with support for prefix/grouping, paths customization, only/except flow filtering, controller overrides, route name prefixes, and route filters."
+  }
 }

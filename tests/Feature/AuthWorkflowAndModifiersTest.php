@@ -248,4 +248,157 @@ class AuthWorkflowAndModifiersTest extends TestCase
 
         config('Auth')->allowLogin = true;
     }
+
+    public function testMultiActionPipelineSequentialExecution(): void
+    {
+        // 1. Register a user
+        $request = Services::request();
+        $request->setBody(json_encode([
+            'username'         => 'david_pipeline',
+            'email'            => 'david@example.com',
+            'password'         => 'Secret1234!',
+            'password_confirm' => 'Secret1234!',
+        ]));
+
+        config('Auth')->responseModifier = JsonModifier::class;
+        $registerController = new RegisterController();
+        $registerController->initController($request, Services::response(), Services::logger());
+        $registerController->attemptRegister();
+
+        // 2. Define a secondary dummy action
+        $dummyActionClass = new class implements \Jengo\Auth\Contracts\AuthActionInterface {
+            public function getActionName(): string
+            {
+                return 'terms';
+            }
+
+            public function show(\CodeIgniter\HTTP\RequestInterface $request, \Jengo\Auth\Entities\User $user): \CodeIgniter\HTTP\ResponseInterface
+            {
+                return Services::response()->setStatusCode(200)->setJSON(['action' => 'terms.view']);
+            }
+
+            public function verify(\CodeIgniter\HTTP\RequestInterface $request, \Jengo\Auth\Entities\User $user): bool
+            {
+                $data = json_decode((string) $request->getBody(), true) ?? [];
+                return ! empty($data['accept_terms']);
+            }
+        };
+
+        // 3. Configure sequential array pipeline for login
+        config('Auth')->actions['login'] = [
+            Email2FA::class,
+            get_class($dummyActionClass),
+        ];
+
+        auth()->logout();
+
+        // 4. Attempt login -> Triggers action_required
+        $request->setBody(json_encode([
+            'email'    => 'david@example.com',
+            'password' => 'Secret1234!',
+        ]));
+
+        $loginController = new LoginController();
+        $loginController->initController($request, Services::response(), Services::logger());
+        $loginResponse = $loginController->attemptLogin();
+
+        $this->assertSame(200, $loginResponse->getStatusCode());
+        $loginData = json_decode($loginResponse->getBody(), true);
+        $this->assertSame('login.action_required', $loginData['action']);
+        $this->assertFalse(auth()->check());
+
+        // 5. Action 1: Email2FA challenge
+        $actionController = new ActionController();
+        $actionController->initController($request, Services::response(), Services::logger());
+        $showResponse = $actionController->show();
+        $this->assertSame(200, $showResponse->getStatusCode());
+
+        $validCode = Services::session()->get('mfa_code');
+        $this->assertNotEmpty($validCode);
+
+        // Verify Action 1 -> Returns action.next because Action 2 is pending
+        $request->setBody(json_encode(['code' => $validCode]));
+        $step1Response = $actionController->handle();
+        $this->assertSame(200, $step1Response->getStatusCode());
+        $step1Data = json_decode($step1Response->getBody(), true);
+        $this->assertSame('action.next', $step1Data['action']);
+        $this->assertFalse(auth()->check());
+
+        // 6. Action 2: DummyTerms challenge
+        $show2Response = $actionController->show();
+        $this->assertSame(200, $show2Response->getStatusCode());
+        $show2Data = json_decode($show2Response->getBody(), true);
+        $this->assertSame('terms.view', $show2Data['action']);
+
+        // Invalid Action 2 verification -> 404
+        $request->setBody(json_encode(['accept_terms' => false]));
+        $invalid2Response = $actionController->handle();
+        $this->assertSame(404, $invalid2Response->getStatusCode());
+        $this->assertFalse(auth()->check());
+
+        // Valid Action 2 verification -> action.success and authenticated
+        $request->setBody(json_encode(['accept_terms' => true]));
+        $valid2Response = $actionController->handle();
+        $this->assertSame(200, $valid2Response->getStatusCode());
+        $valid2Data = json_decode($valid2Response->getBody(), true);
+        $this->assertSame('action.success', $valid2Data['action']);
+
+        $this->assertTrue(auth()->check());
+        $this->assertSame('david_pipeline', auth()->user()->username);
+
+        config('Auth')->actions['login'] = null;
+    }
+
+    public function testEmailActivatorPostRegistrationFlow(): void
+    {
+        // 1. Configure EmailActivator for register
+        config('Auth')->actions['register'] = \Jengo\Auth\Actions\EmailActivator::class;
+        config('Auth')->responseModifier = JsonModifier::class;
+
+        $request = Services::request();
+        $request->setBody(json_encode([
+            'username'         => 'frank_activator',
+            'email'            => 'frank_activator@example.com',
+            'password'         => 'Secret1234!',
+            'password_confirm' => 'Secret1234!',
+        ]));
+
+        $registerController = new RegisterController();
+        $registerController->initController($request, Services::response(), Services::logger());
+        $regResponse = $registerController->attemptRegister();
+
+        $this->assertSame(200, $regResponse->getStatusCode());
+        $regData = json_decode($regResponse->getBody(), true);
+        $this->assertSame('register.action_required', $regData['action']);
+
+        // User is not yet authenticated
+        $this->assertFalse(auth()->check());
+
+        // 2. Show activation challenge
+        $actionController = new ActionController();
+        $actionController->initController($request, Services::response(), Services::logger());
+        $showResponse = $actionController->show();
+        $this->assertSame(200, $showResponse->getStatusCode());
+
+        $activationCode = Services::session()->get('activation_code');
+        $this->assertNotEmpty($activationCode);
+
+        // 3. Invalid code -> 404
+        $request->setBody(json_encode(['code' => '000000']));
+        $invalidResponse = $actionController->handle();
+        $this->assertSame(404, $invalidResponse->getStatusCode());
+        $this->assertFalse(auth()->check());
+
+        // 4. Valid code -> 200, activated and logged in
+        $request->setBody(json_encode(['code' => $activationCode]));
+        $validResponse = $actionController->handle();
+        $this->assertSame(200, $validResponse->getStatusCode());
+        $validData = json_decode($validResponse->getBody(), true);
+        $this->assertSame('action.success', $validData['action']);
+
+        $this->assertTrue(auth()->check());
+        $this->assertSame('frank_activator', auth()->user()->username);
+
+        config('Auth')->actions['register'] = null;
+    }
 }

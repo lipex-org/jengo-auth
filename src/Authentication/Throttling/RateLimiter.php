@@ -36,6 +36,29 @@ class RateLimiter
     }
 
     /**
+     * Generate an IP-only throttle key (prevents distributed password spraying across multiple accounts).
+     */
+    public function ipKey(RequestInterface $request, string $action = 'auth'): string
+    {
+        $ip = $request->getIPAddress();
+        if ($ip === '' || $ip === '::1' || $ip === '127.0.0.1') {
+            $ip = 'localhost';
+        }
+
+        return "throttle:ip:{$action}:{$ip}";
+    }
+
+    /**
+     * Generate an Account-only throttle key (prevents targeted brute forcing of a single account regardless of IP/User-Agent rotation).
+     */
+    public function accountKey(?string $identifier, string $action = 'auth'): string
+    {
+        $identPart = $identifier !== null && $identifier !== '' ? strtolower(trim($identifier)) : 'global';
+
+        return "throttle:account:{$action}:{$identPart}";
+    }
+
+    /**
      * Generate a composite throttle key for a guest using multiple entropy signals:
      * - Target identifier (e.g. email/username, lowercase)
      * - Client IP address
@@ -59,6 +82,50 @@ class RateLimiter
         $fingerprint = substr(hash('sha256', "{$userAgent}|{$deviceId}|{$acceptLang}"), 0, 16);
 
         return "throttle:guest:{$action}:{$identPart}:{$ip}:{$fingerprint}";
+    }
+
+    /**
+     * Dual-Bucket throttle check: checks both IP bucket and target account bucket.
+     */
+    public function isThrottled(RequestInterface $request, ?string $identifier, string $action = 'auth', int $maxAttempts = 5, int $decaySeconds = 60): bool
+    {
+        $compositeKey = $this->forGuest($request, $identifier, $action);
+        if ($this->tooManyAttempts($compositeKey, $maxAttempts, $decaySeconds)) {
+            return true;
+        }
+
+        if ($identifier !== null && $identifier !== '') {
+            $accKey = $this->accountKey($identifier, $action);
+            if ($this->tooManyAttempts($accKey, $maxAttempts * 2, $decaySeconds)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Record failure in both composite and account buckets.
+     */
+    public function recordFailure(RequestInterface $request, ?string $identifier, string $action = 'auth', int $decaySeconds = 60): void
+    {
+        $this->hit($this->forGuest($request, $identifier, $action), $decaySeconds);
+
+        if ($identifier !== null && $identifier !== '') {
+            $this->hit($this->accountKey($identifier, $action), $decaySeconds);
+        }
+    }
+
+    /**
+     * Record success by clearing both composite and account buckets.
+     */
+    public function recordSuccess(RequestInterface $request, ?string $identifier, string $action = 'auth'): void
+    {
+        $this->clear($this->forGuest($request, $identifier, $action));
+
+        if ($identifier !== null && $identifier !== '') {
+            $this->clear($this->accountKey($identifier, $action));
+        }
     }
 
     /**
@@ -87,10 +154,9 @@ class RateLimiter
      */
     public function clear(string $key): void
     {
-        // CodeIgniter's Throttler uses cache with time-based token decay.
-        // We can explicitly remove the cached bucket.
         $safeKey = md5($key);
         $cache = Services::cache();
+        $cache->delete('throttler_' . $safeKey);
         $cache->delete($safeKey);
     }
 

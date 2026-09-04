@@ -10,6 +10,8 @@ use Config\Services;
 use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Entities\User;
 use Jengo\Auth\Entities\UserIdentity;
+use Jengo\Auth\Forms\RegisterFormHandler;
+use Jengo\Base\Attributes\Validate;
 
 class RegisterController extends BaseAuthController
 {
@@ -37,48 +39,32 @@ class RegisterController extends BaseAuthController
     }
 
     /**
-     * Process new user registration.
+     * Process new user registration using #[Validate] attribute and form() helper.
      */
+    #[Validate(RegisterFormHandler::class)]
     public function attemptRegister(): ResponseInterface
     {
         if ($disabled = $this->ensureFeatureEnabled('allowRegistration', 'register')) {
             return $disabled;
         }
 
-        $payload = $this->extractPayload();
+        /** @var RegisterFormHandler $form */
+        $form = form();
+        $email = $form->getEmail();
+        $username = $form->getUsername();
+        $password = $form->getPassword();
+
         $auth = auth();
 
-        $email = $payload['email'] ?? null;
-        $username = $payload['username'] ?? null;
-        $password = $payload['password'] ?? null;
-        $passwordConfirm = $payload['password_confirm'] ?? null;
-
-        $errors = [];
-        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'A valid email address is required.';
-        }
-        if (! $password || strlen($password) < 8) {
-            $errors['password'] = 'Password must be at least 8 characters long.';
-        }
-        if ($passwordConfirm !== null && $password !== $passwordConfirm) {
-            $errors['password_confirm'] = 'Passwords do not match.';
-        }
-
-        // Check if email already registered
-        if (! empty($email)) {
-            $existing = $auth->getUserIdentityModel()->where(['type' => 'email_password', 'name' => $email])->first();
-            if ($existing) {
-                $errors['email'] = 'An account with this email already exists.';
-            }
-        }
-
-        if (! empty($errors)) {
+        // Check if email already registered (case-insensitive)
+        $existing = $auth->getUserIdentityModel()->where(['type' => 'email_password', 'name' => $email])->first();
+        if ($existing) {
             $data = new AuthResponseData(
                 action: 'register.validation_failed',
                 status: 'error',
                 statusCode: 422,
                 message: 'Validation failed.',
-                errors: $errors
+                errors: ['email' => 'An account with this email already exists.']
             );
             return $this->renderResponse('register.validation_failed', $data);
         }
@@ -106,19 +92,23 @@ class RegisterController extends BaseAuthController
         Events::trigger('register', $user);
 
         // Check post-register action pipeline
-        $actionClass = config('Auth')->actions['register'] ?? null;
-        if ($actionClass && class_exists($actionClass)) {
+        $configuredActions = config('Auth')->actions['register'] ?? null;
+        $actions = is_array($configuredActions) ? array_values(array_filter($configuredActions)) : ($configuredActions ? [$configuredActions] : []);
+        $validActions = array_values(array_filter($actions, fn($c) => is_string($c) && class_exists($c)));
+
+        if ($validActions !== []) {
             $session = Services::session();
             $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
             $session->set($sessionKey, $user->id);
-            $session->set('auth_pending_action', $actionClass);
+            $session->set('auth_pending_actions', $validActions);
+            $session->set('auth_pending_action', $validActions[0]);
 
             $data = new AuthResponseData(
                 action: 'register.action_required',
                 status: 'info',
                 statusCode: 200,
                 message: 'Registration successful. Action required.',
-                redirectTo: '/auth/action/show',
+                redirectTo: auth_url('auth.action.show'),
                 user: $user
             );
             return $this->renderResponse('register.action_required', $data);

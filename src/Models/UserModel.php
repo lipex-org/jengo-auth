@@ -34,15 +34,28 @@ class UserModel extends Model
      */
     public function findByIdentifier(string $identifier): ?User
     {
+        $clean = trim($identifier);
+        $cleanLower = strtolower($clean);
+
         // 1. Try direct username
-        $user = $this->where('username', $identifier)->first();
+        $user = $this->groupStart()
+            ->where('username', $clean)
+            ->orWhere('username', $cleanLower)
+            ->groupEnd()
+            ->first();
+
         if ($user) {
             return $user;
         }
 
         // 2. Try identity (email, etc.)
         $identityModel = new UserIdentityModel();
-        $identity = $identityModel->where('name', $identifier)->first();
+        $identity = $identityModel->groupStart()
+            ->where('name', $cleanLower)
+            ->orWhere('name', $clean)
+            ->groupEnd()
+            ->first();
+
         if ($identity) {
             return $this->find($identity->user_id);
         }

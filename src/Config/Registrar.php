@@ -11,15 +11,15 @@ use Jengo\Auth\Filters\RoleFilter;
 class Registrar
 {
     /**
-     * Registers filters with CodeIgniter 4.
+     * Registers filter aliases with CodeIgniter 4.
      */
     public static function Filters(): array
     {
         return [
             'aliases' => [
-                'jengo.auth'       => AuthFilter::class,
-                'jengo.role'       => RoleFilter::class,
-                'jengo.permission' => PermissionFilter::class,
+                'auth'       => AuthFilter::class,
+                'role'             => RoleFilter::class,
+                'permission'       => PermissionFilter::class,
             ],
         ];
     }
