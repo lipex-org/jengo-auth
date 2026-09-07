@@ -85,4 +85,9 @@ class StandardViewModifier implements ResponseModifierInterface
             default               => null,
         };
     }
+
+    public function modifyValidationFailed(array $errors, RequestInterface $request, array $options = []): ResponseInterface
+    {
+        return redirect()->back()->withInput()->with('errors', $errors);
+    }
 }

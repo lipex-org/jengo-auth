@@ -84,15 +84,62 @@
             "time": "2026-07-07T09:23:35+00:00"
         },
         {
+            "name": "gilads-otiannoh254/inertia-protocol",
+            "version": "v0.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gilads-otiannoh24/inertia-protocol.git",
+                "reference": "5315f6475c9e3571d25c42c1061d4c9a8b15a7db"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/gilads-otiannoh24/inertia-protocol/zipball/5315f6475c9e3571d25c42c1061d4c9a8b15a7db",
+                "reference": "5315f6475c9e3571d25c42c1061d4c9a8b15a7db",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.5 || ^11.0"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/Support/helpers.php"
+                ],
+                "psr-4": {
+                    "Inertia\\Protocol\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ian Ochieng",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Framework-agnostic Inertia.js Wire Protocol Engine and Response Builder for PHP.",
+            "support": {
+                "issues": "https://github.com/gilads-otiannoh24/inertia-protocol/issues",
+                "source": "https://github.com/gilads-otiannoh24/inertia-protocol/tree/v0.0.1"
+            },
+            "time": "2026-09-04T15:58:10+00:00"
+        },
+        {
             "name": "jengo/base",
             "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../base",
-                "reference": "ca7e0a2778de8a02b74a6ff9a08c317e51911389"
+                "reference": "ff8f13fe04cf6e8c866706e1207251ff07ff5cf8"
             },
             "require": {
                 "codeigniter4/framework": "^4.7",
+                "gilads-otiannoh254/inertia-protocol": "*@dev",
                 "psy/psysh": "^0.12.24",
                 "sqids/sqids": "^0.5.0"
             },
@@ -1668,7 +1715,7 @@
             "require": {
                 "codeigniter4/framework": "^4.7",
                 "php": ">=8.5",
-                "vima/core": "^1.0"
+                "vima/core": "*"
             },
             "require-dev": {
                 "phpunit/phpunit": "^13.1"
@@ -2000,16 +2047,16 @@
         },
         {
             "name": "phpunit/php-code-coverage",
-            "version": "14.3.1",
+            "version": "14.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "6ce313bb110384148d1dc7695a99175f59529069"
+                "reference": "93d62632fb675b76c9b941fdcfcfa10ffb9dea75"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/6ce313bb110384148d1dc7695a99175f59529069",
-                "reference": "6ce313bb110384148d1dc7695a99175f59529069",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/93d62632fb675b76c9b941fdcfcfa10ffb9dea75",
+                "reference": "93d62632fb675b76c9b941fdcfcfa10ffb9dea75",
                 "shasum": ""
             },
             "require": {
@@ -2028,7 +2075,7 @@
                 "theseer/tokenizer": "^2.0.1"
             },
             "require-dev": {
-                "phpunit/phpunit": "^13.3.1"
+                "phpunit/phpunit": "^13.3.2"
             },
             "suggest": {
                 "ext-pcov": "PHP extension that provides line coverage",
@@ -2066,7 +2113,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-code-coverage/issues",
                 "security": "https://github.com/sebastianbergmann/php-code-coverage/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/14.3.1"
+                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/14.3.2"
             },
             "funding": [
                 {
@@ -2086,7 +2133,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-16T05:23:47+00:00"
+            "time": "2026-09-04T03:46:43+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",

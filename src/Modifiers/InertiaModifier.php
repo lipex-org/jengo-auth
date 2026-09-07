@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\Contracts\ResponseModifierInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Base\Inertia\Inertia;
 
 class InertiaModifier implements ResponseModifierInterface
 {
@@ -24,28 +25,45 @@ class InertiaModifier implements ResponseModifierInterface
                 return Services::response()->setStatusCode(403)->setBody($data->message ?? 'Forbidden');
             }
 
+            if ($data->errors) {
+                session()->setFlashdata('errors', $data->errors);
+            }
+            if ($data->message) {
+                session()->setFlashdata('error', $data->message);
+            }
+
             return redirect()->back()->withInput()->with('errors', $data->errors)->with('error', $data->message);
         }
 
         // 2. Views / GET actions
         if ($data->view !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show')) {
             $component = $this->resolveComponentForAction($action, $data->view);
+            $props = $data->toArray();
 
-            if (class_exists('Jengo\\Inertia\\Inertia')) {
-                return \Jengo\Inertia\Inertia::render($component, $data->toArray());
+            $res = Inertia::render($component, $props)->toResponse($request);
+
+            if ($res instanceof ResponseInterface) {
+                return $res;
             }
 
-            // Fallback JSON or plain response when testing without Inertia package active
-            return Services::response()
-                ->setStatusCode($data->statusCode)
-                ->setJSON([
-                    'component' => $component,
-                    'props'     => $data->toArray(),
-                ]);
+            try {
+                return Services::response()
+                    ->setStatusCode($data->statusCode)
+                    ->setBody($res->render(config('Jengo')->inertia['rootView'] ?? 'app'))
+                    ->setHeader('Content-Type', 'text/html; charset=UTF-8');
+            } catch (\Throwable) {
+                return Services::response()
+                    ->setStatusCode($data->statusCode)
+                    ->setJSON($res->getData()['page'] ?? ['component' => $component, 'props' => $props]);
+            }
         }
 
         // 3. Success Redirect
         $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['home'] ?? '/dashboard';
+        if ($data->message) {
+            session()->setFlashdata('message', $data->message);
+        }
+
         return redirect()->to($redirectUrl)->with('message', $data->message);
     }
 
@@ -90,5 +108,12 @@ class InertiaModifier implements ResponseModifierInterface
             'action.show'         => 'Auth/MfaChallenge',
             default               => 'Auth/' . ucfirst(str_replace(['.', '_'], '', $action)),
         };
+    }
+
+    public function modifyValidationFailed(array $errors, RequestInterface $request, array $options = []): ResponseInterface
+    {
+        session()->setFlashdata('errors', $errors);
+
+        return redirect()->back()->withInput()->with('errors', $errors);
     }
 }

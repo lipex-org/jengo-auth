@@ -45,4 +45,16 @@ class JsonModifier implements ResponseModifierInterface
             ->setStatusCode($data->statusCode)
             ->setJSON($payload);
     }
+
+    public function modifyValidationFailed(array $errors, RequestInterface $request, array $options = []): ResponseInterface
+    {
+        return Services::response()
+            ->setStatusCode(422)
+            ->setJSON([
+                'action'  => $options['action'] ?? 'validation.failed',
+                'status'  => 'error',
+                'message' => 'The given data was invalid.',
+                'errors'  => $errors,
+            ]);
+    }
 }

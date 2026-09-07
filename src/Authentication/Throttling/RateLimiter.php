@@ -134,8 +134,10 @@ class RateLimiter
     public function tooManyAttempts(string $key, int $maxAttempts = 5, int $decaySeconds = 60): bool
     {
         $safeKey = md5($key);
-        $throttler = Services::throttler();
-        return ! $throttler->check($safeKey, $maxAttempts, $decaySeconds);
+        $cache = Services::cache();
+        $attempts = (int) $cache->get('throttle_hits_' . $safeKey);
+
+        return $attempts >= $maxAttempts;
     }
 
     /**
@@ -144,9 +146,13 @@ class RateLimiter
     public function hit(string $key, int $decaySeconds = 60): int
     {
         $safeKey = md5($key);
-        $throttler = Services::throttler();
-        $throttler->check($safeKey, 1000, $decaySeconds);
-        return $throttler->getTokenTime();
+        $cache = Services::cache();
+        $hitsKey = 'throttle_hits_' . $safeKey;
+        $attempts = (int) $cache->get($hitsKey);
+        $attempts++;
+        $cache->save($hitsKey, $attempts, $decaySeconds);
+
+        return $decaySeconds;
     }
 
     /**
@@ -156,6 +162,7 @@ class RateLimiter
     {
         $safeKey = md5($key);
         $cache = Services::cache();
+        $cache->delete('throttle_hits_' . $safeKey);
         $cache->delete('throttler_' . $safeKey);
         $cache->delete($safeKey);
     }
