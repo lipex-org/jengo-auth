@@ -52,7 +52,10 @@ class UniversalGuard implements GuardInterface
         $request = Services::request();
         $authHeader = $request->getHeaderLine('Authorization');
         $hasToken = ($authHeader && str_starts_with(strtolower($authHeader), 'bearer'))
-            || $request->getGet('api_token') !== null;
+            || $request->getGet('api_token') !== null
+            || $request->getGet('token') !== null
+            || isset($_GET['api_token'])
+            || isset($_GET['token']);
 
         if ($hasToken) {
             $user = $this->tokenGuard->user();

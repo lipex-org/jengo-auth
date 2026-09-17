@@ -30,16 +30,20 @@ class NotificationSenderTest extends TestCase
         ]);
         auth()->getUserIdentityModel()->insert($identity);
 
+        $emailMock = $this->createStub(\CodeIgniter\Email\Email::class);
+        $emailMock->method('send')->willReturn(true);
+        Services::injectMock('email', $emailMock);
+
         $sentMagic = $notifier->sendMagicLink($user, 'test-token', 'https://example.com/magic/test');
         $sentReset = $notifier->sendPasswordReset($user, 'reset-token', 'https://example.com/reset/test');
         $sentMfa   = $notifier->sendMfaCode($user, '123456');
         $sentAct   = $notifier->sendActivation($user, 'act-token', 'https://example.com/act/test');
 
         // Email service in test environment handles sending
-        $this->assertIsBool($sentMagic);
-        $this->assertIsBool($sentReset);
-        $this->assertIsBool($sentMfa);
-        $this->assertIsBool($sentAct);
+        $this->assertTrue($sentMagic);
+        $this->assertTrue($sentReset);
+        $this->assertTrue($sentMfa);
+        $this->assertTrue($sentAct);
     }
 
     public function testCustomNotificationSenderPluggabilityInControllers(): void

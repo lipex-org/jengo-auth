@@ -41,7 +41,7 @@ class RateLimiter
     public function ipKey(RequestInterface $request, string $action = 'auth'): string
     {
         $ip = $request->getIPAddress();
-        if ($ip === '' || $ip === '::1' || $ip === '127.0.0.1') {
+        if ($ip === '' || $ip === '::1' || $ip === '127.0.0.1' || $ip === '0.0.0.0') {
             $ip = 'localhost';
         }
 
@@ -67,7 +67,7 @@ class RateLimiter
     public function forGuest(RequestInterface $request, ?string $identifier = null, string $action = 'auth'): string
     {
         $ip = $request->getIPAddress();
-        if ($ip === '' || $ip === '::1' || $ip === '127.0.0.1') {
+        if ($ip === '' || $ip === '::1' || $ip === '127.0.0.1' || $ip === '0.0.0.0') {
             $ip = 'localhost';
         }
 
@@ -152,6 +152,11 @@ class RateLimiter
         $attempts++;
         $cache->save($hitsKey, $attempts, $decaySeconds);
 
+        $timerKey = 'throttle_timer_' . $safeKey;
+        if (! $cache->get($timerKey)) {
+            $cache->save($timerKey, time() + $decaySeconds, $decaySeconds);
+        }
+
         return $decaySeconds;
     }
 
@@ -163,6 +168,7 @@ class RateLimiter
         $safeKey = md5($key);
         $cache = Services::cache();
         $cache->delete('throttle_hits_' . $safeKey);
+        $cache->delete('throttle_timer_' . $safeKey);
         $cache->delete('throttler_' . $safeKey);
         $cache->delete($safeKey);
     }
@@ -173,6 +179,13 @@ class RateLimiter
     public function availableIn(string $key): int
     {
         $safeKey = md5($key);
-        return Services::throttler()->getTokenTime();
+        $cache = Services::cache();
+        $timerKey = 'throttle_timer_' . $safeKey;
+        $expiresAt = (int) $cache->get($timerKey);
+        if ($expiresAt > 0) {
+            return max(1, $expiresAt - time());
+        }
+
+        return 60;
     }
 }

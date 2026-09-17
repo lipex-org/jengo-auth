@@ -30,6 +30,11 @@ abstract class TestCase extends CIUnitTestCase
 
         // Initialize Vima service for tests
         Services::vima();
+
+        // Stub email service to avoid shell execution of sendmail during tests
+        $emailStub = $this->createStub(\CodeIgniter\Email\Email::class);
+        $emailStub->method('send')->willReturn(true);
+        Services::injectMock('email', $emailStub);
     }
 
     protected function tearDown(): void

@@ -158,4 +158,44 @@ class User extends BaseEntity
     {
         return $this->is()->superAdmin();
     }
+
+    /**
+     * Check if user is banned.
+     */
+    public function isBanned(): bool
+    {
+        return ($this->status ?? 'active') === 'banned' || (! (bool) $this->active && ! empty($this->status_message));
+    }
+
+    /**
+     * Check if user account is active and not banned.
+     */
+    public function isActive(): bool
+    {
+        return (bool) $this->active && ($this->status ?? 'active') !== 'banned';
+    }
+
+    /**
+     * Ban the user.
+     */
+    public function ban(?string $message = null): self
+    {
+        $this->status = 'banned';
+        $this->active = false;
+        $this->status_message = $message;
+
+        return $this;
+    }
+
+    /**
+     * Unban the user.
+     */
+    public function unban(): self
+    {
+        $this->status = 'active';
+        $this->active = true;
+        $this->status_message = null;
+
+        return $this;
+    }
 }

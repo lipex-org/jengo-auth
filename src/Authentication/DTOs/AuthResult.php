@@ -30,6 +30,11 @@ class AuthResult
         return $this->error;
     }
 
+    public function getMessage(): ?string
+    {
+        return $this->error;
+    }
+
     public static function success(?User $user = null, array $extra = []): self
     {
         return new self(success: true, user: $user, extra: $extra);

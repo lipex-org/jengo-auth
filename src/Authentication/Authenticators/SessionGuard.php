@@ -51,7 +51,7 @@ class SessionGuard implements GuardInterface
 
         if ($userId) {
             $user = $this->userModel->find($userId);
-            if ($user && $user->active) {
+            if ($user && $user->active && $user->status !== 'banned') {
                 $this->user = $user;
                 return $this->user;
             }
@@ -83,7 +83,7 @@ class SessionGuard implements GuardInterface
             return new AuthResult(false, null, 'Invalid credentials.');
         }
 
-        if (! $user->active) {
+        if (! $user->active || $user->status === 'banned') {
             return new AuthResult(false, null, 'User account is inactive or banned.');
         }
 
@@ -129,6 +129,14 @@ class SessionGuard implements GuardInterface
 
     public function logout(): void
     {
+        $userId = $this->user?->id ?? Services::session()->get($this->sessionKey);
+        if ($userId) {
+            $this->identityModel
+                ->where('user_id', (int) $userId)
+                ->where('type', 'remember_token')
+                ->delete();
+        }
+
         $this->user = null;
 
         $session = Services::session();
@@ -172,7 +180,7 @@ class SessionGuard implements GuardInterface
         $this->identityModel->save($identity);
 
         $response = Services::response();
-        $response->setCookie('remember_token', "{$selector}:{$validator}", 30 * 86400, '', '', '', true, true);
+        $response->setCookie('remember_token', "{$selector}:{$validator}", 30 * 86400, '', '/', '', true, true);
     }
 
     protected function recallUserFromCookie(): ?User
@@ -200,7 +208,7 @@ class SessionGuard implements GuardInterface
         }
 
         $user = $this->userModel->find($identity->user_id);
-        if ($user && $user->active) {
+        if ($user && $user->active && $user->status !== 'banned') {
             $session = Services::session();
             $session->set($this->sessionKey, $user->id);
             return $user;

@@ -5,7 +5,7 @@
     "type": "library",
     "authors": [
         {
-            "name": "Ian Otieno",
+            "name": "Ian Ochieng",
             "email": "ochiengian383@gmail.com"
         }
     ],
@@ -24,9 +24,9 @@
         }
     ],
     "require": {
-        "php": ">=8.5",
-        "codeigniter4/framework": "^4.7",
-        "jengo/base": "*",
+        "php": ">=8.2",
+        "codeigniter4/framework": "^4.6|^4.7",
+        "jengo/base": "^1.1 || dev-main",
         "vima/core": "dev-master as 1.0.0",
         "vima/codeigniter": "dev-main as 1.0.0"
     },

@@ -54,13 +54,15 @@ class TokenGuard implements GuardInterface
         }
 
         $user = $this->userModel->find($token->user_id);
-        if (! $user || ! $user->active) {
+        if (! $user || ! $user->active || $user->status === 'banned') {
             return null;
         }
 
         // Update last_used_at on token
         $token->last_used_at = date('Y-m-d H:i:s');
-        $this->tokenModel->save($token);
+        if ($token->hasChanged()) {
+            $this->tokenModel->save($token);
+        }
 
         $this->currentToken = $token;
         $this->user         = $user;
@@ -160,7 +162,7 @@ class TokenGuard implements GuardInterface
         }
 
         // 2. Query parameter fallback for development / webhooks
-        $queryToken = $request->getGet('api_token') ?? $request->getGet('token');
+        $queryToken = $request->getGet('api_token') ?? $request->getGet('token') ?? $_GET['api_token'] ?? $_GET['token'] ?? null;
         if (is_string($queryToken) && $queryToken !== '') {
             return $queryToken;
         }

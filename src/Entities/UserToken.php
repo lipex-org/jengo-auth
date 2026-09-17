@@ -33,7 +33,24 @@ class UserToken extends BaseEntity
             return true;
         }
 
-        return in_array($ability, $abilities, true);
+        foreach ($abilities as $tokenAbility) {
+            if ($tokenAbility === $ability) {
+                return true;
+            }
+            if (str_ends_with($tokenAbility, '*') && str_starts_with($ability, substr($tokenAbility, 0, -1))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if the token does not have a specific ability.
+     */
+    public function cannot(string $ability): bool
+    {
+        return ! $this->can($ability);
     }
 
     /**

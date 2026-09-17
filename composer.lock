@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "368c098aeff7a31ee8f14bc22ba59f01",
+    "content-hash": "bb21882cdc107ae1795f3387958e789b",
     "packages": [
         {
             "name": "codeigniter4/framework",
@@ -135,11 +135,11 @@
             "dist": {
                 "type": "path",
                 "url": "../base",
-                "reference": "ff8f13fe04cf6e8c866706e1207251ff07ff5cf8"
+                "reference": "543ac34aedfc15f43d9d4943ca8d40029639471e"
             },
             "require": {
                 "codeigniter4/framework": "^4.7",
-                "gilads-otiannoh254/inertia-protocol": "*@dev",
+                "gilads-otiannoh254/inertia-protocol": "^0.0",
                 "psy/psysh": "^0.12.24",
                 "sqids/sqids": "^0.5.0"
             },
@@ -3745,13 +3745,14 @@
     ],
     "minimum-stability": "dev",
     "stability-flags": {
+        "jengo/base": 20,
         "vima/codeigniter": 20,
         "vima/core": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.5"
+        "php": ">=8.2"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

@@ -191,9 +191,10 @@ class AuthFilter implements FilterInterface
         }
 
         $uri = $request->getUri()->getPath();
+        $cleanPath = ltrim($uri, '/');
 
         return str_contains($accept, 'application/json')
-            || str_starts_with($uri, 'api/')
+            || str_starts_with($cleanPath, 'api/')
             || ! empty($authHeader);
     }
 }
