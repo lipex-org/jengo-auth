@@ -56,6 +56,9 @@ class SetupVariant implements CommandVariantInterface
             $vimaSetup->run($params);
         }
 
+        // Sanitize Config/Autoload.php to ensure no syntax errors (e.g. double commas in $helpers)
+        $this->sanitizeAutoload();
+
         // 3. Automatically publish routes in app/Config/Routes.php
         $this->publishRoutes();
 
@@ -152,5 +155,31 @@ class SetupVariant implements CommandVariantInterface
                 CLI::color('✔', 'green') .
                 ' Added authentication routes to Config/Routes.php'
         );
+    }
+
+    /**
+     * Sanitizes app/Config/Autoload.php to clean up any accidental double commas or syntax errors in $helpers.
+     */
+    protected function sanitizeAutoload(): void
+    {
+        $autoloadPath = APPPATH . 'Config/Autoload.php';
+        if (! file_exists($autoloadPath)) {
+            return;
+        }
+
+        $content = file_get_contents($autoloadPath);
+        if ($content === false) {
+            return;
+        }
+
+        $pattern = '/(public\s+\$helpers\s*=\s*\[)(.*?)(\];)/s';
+        $sanitized = preg_replace_callback($pattern, function ($matches) {
+            $helpers = preg_replace('/,(\s*,)+/', ',', $matches[2]);
+            return $matches[1] . $helpers . $matches[3];
+        }, $content);
+
+        if ($sanitized !== null && $sanitized !== $content) {
+            file_put_contents($autoloadPath, $sanitized);
+        }
     }
 }
