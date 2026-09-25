@@ -211,20 +211,20 @@ class AuthWorkflowAndModifiersTest extends TestCase
         $this->assertSame('carol', auth()->user()->username);
     }
 
-    public function testInertiaModifierUsesConfiguredViews(): void
+    public function testInertiaModifierThrowsExceptionWhenInertiaNotInstalled(): void
     {
         config('Auth')->responseModifier = \Jengo\Auth\Modifiers\InertiaModifier::class;
         config('Auth')->views['login'] = 'Pages/Auth/CustomLogin';
 
         $request = Services::request();
+        $request->setHeader('X-Inertia', 'true');
         $loginController = new LoginController();
         $loginController->initController($request, Services::response(), Services::logger());
 
-        $response = $loginController->showLogin();
-        $this->assertSame(200, $response->getStatusCode());
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia');
 
-        $data = json_decode($response->getBody(), true);
-        $this->assertSame('Pages/Auth/CustomLogin', $data['component']);
+        $loginController->showLogin();
 
         // Reset config
         config('Auth')->views['login'] = 'Jengo\Auth\Views\login';

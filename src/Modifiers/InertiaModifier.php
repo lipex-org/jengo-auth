@@ -9,8 +9,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\Contracts\ResponseModifierInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
-use Jengo\Base\Inertia\Inertia;
-
+use Jengo\Inertia\Inertia;
 class InertiaModifier implements ResponseModifierInterface
 {
     public function modify(string $action, AuthResponseData $data, RequestInterface $request): ResponseInterface
@@ -37,25 +36,16 @@ class InertiaModifier implements ResponseModifierInterface
 
         // 2. Views / GET actions
         if ($data->view !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show')) {
+            if (! class_exists(Inertia::class)) {
+                throw new \RuntimeException(
+                    'The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia'
+                );
+            }
+
             $component = $this->resolveComponentForAction($action, $data->view);
             $props = $data->toArray();
 
-            $res = Inertia::render($component, $props)->toResponse($request);
-
-            if ($res instanceof ResponseInterface) {
-                return $res;
-            }
-
-            try {
-                return Services::response()
-                    ->setStatusCode($data->statusCode)
-                    ->setBody($res->render(config('Jengo')->inertia['rootView'] ?? 'app'))
-                    ->setHeader('Content-Type', 'text/html; charset=UTF-8');
-            } catch (\Throwable) {
-                return Services::response()
-                    ->setStatusCode($data->statusCode)
-                    ->setJSON($res->getData()['page'] ?? ['component' => $component, 'props' => $props]);
-            }
+            return Inertia::render($component, $props);
         }
 
         // 3. Success Redirect

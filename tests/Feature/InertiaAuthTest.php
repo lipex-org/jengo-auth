@@ -21,7 +21,7 @@ class InertiaAuthTest extends TestCase
         config('Auth')->responseModifier = InertiaModifier::class;
     }
 
-    public function testShowLoginDeliversSpecCompliantInertiaJsonResponse(): void
+    public function testShowLoginThrowsExceptionWhenInertiaNotInstalled(): void
     {
         $request = Services::request();
         $request->setHeader('X-Inertia', 'true');
@@ -30,20 +30,13 @@ class InertiaAuthTest extends TestCase
         $controller = new LoginController();
         $controller->initController($request, Services::response(), Services::logger());
 
-        $response = $controller->showLogin();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia');
 
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertTrue($response->hasHeader('X-Inertia'));
-        $this->assertSame('true', $response->getHeaderLine('X-Inertia'));
-        $this->assertSame('X-Inertia', $response->getHeaderLine('Vary'));
-
-        $data = json_decode($response->getBody(), true);
-        $this->assertSame('Auth/Login', $data['component']);
-        $this->assertArrayHasKey('props', $data);
-        $this->assertArrayHasKey('errors', $data['props']);
+        $controller->showLogin();
     }
 
-    public function testShowRegisterDeliversSpecCompliantInertiaJsonResponse(): void
+    public function testShowRegisterThrowsExceptionWhenInertiaNotInstalled(): void
     {
         $request = Services::request();
         $request->setHeader('X-Inertia', 'true');
@@ -51,17 +44,13 @@ class InertiaAuthTest extends TestCase
         $controller = new RegisterController();
         $controller->initController($request, Services::response(), Services::logger());
 
-        $response = $controller->showRegister();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia');
 
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertTrue($response->hasHeader('X-Inertia'));
-
-        $data = json_decode($response->getBody(), true);
-        $this->assertSame('Auth/Register', $data['component']);
-        $this->assertArrayHasKey('props', $data);
+        $controller->showRegister();
     }
 
-    public function testShowForgotPasswordDeliversSpecCompliantInertiaJsonResponse(): void
+    public function testShowForgotPasswordThrowsExceptionWhenInertiaNotInstalled(): void
     {
         $request = Services::request();
         $request->setHeader('X-Inertia', 'true');
@@ -69,16 +58,13 @@ class InertiaAuthTest extends TestCase
         $controller = new ForgotPasswordController();
         $controller->initController($request, Services::response(), Services::logger());
 
-        $response = $controller->showForgot();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia');
 
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertTrue($response->hasHeader('X-Inertia'));
-
-        $data = json_decode($response->getBody(), true);
-        $this->assertSame('Auth/ForgotPassword', $data['component']);
+        $controller->showForgot();
     }
 
-    public function testShowMagicLinkDeliversSpecCompliantInertiaJsonResponse(): void
+    public function testShowMagicLinkThrowsExceptionWhenInertiaNotInstalled(): void
     {
         $request = Services::request();
         $request->setHeader('X-Inertia', 'true');
@@ -86,13 +72,10 @@ class InertiaAuthTest extends TestCase
         $controller = new MagicLinkController();
         $controller->initController($request, Services::response(), Services::logger());
 
-        $response = $controller->showMagicLink();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia');
 
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertTrue($response->hasHeader('X-Inertia'));
-
-        $data = json_decode($response->getBody(), true);
-        $this->assertSame('Auth/MagicLink', $data['component']);
+        $controller->showMagicLink();
     }
 
     public function testInertiaValidationFailureFlashesErrorsAndRedirectsBack(): void

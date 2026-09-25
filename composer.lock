@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "022b3bb528f1419043e210305075070e",
+    "content-hash": "3bd78f6716befbae287ec975f3bb2f87",
     "packages": [
         {
             "name": "codeigniter4/framework",
@@ -131,21 +131,17 @@
         },
         {
             "name": "jengo/base",
-            "version": "v1.1.63",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/lipex-org/jengo-base.git",
-                "reference": "dbffe60edafb71d8f3436cf481259c1d5aac3171"
-            },
+            "version": "1.1.99",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/lipex-org/jengo-base/zipball/dbffe60edafb71d8f3436cf481259c1d5aac3171",
-                "reference": "dbffe60edafb71d8f3436cf481259c1d5aac3171",
-                "shasum": ""
+                "type": "path",
+                "url": "../base",
+                "reference": "f49394a24e607f7c539f000cda69a43799b8f4ef"
             },
             "require": {
                 "codeigniter4/framework": "^4.7",
                 "gilads-otiannoh254/inertia-protocol": "^0.0",
+                "nikic/php-parser": "^5.9",
+                "psr/container": "^2.0",
                 "psy/psysh": "^0.12.24",
                 "sqids/sqids": "^0.5.0"
             },
@@ -155,16 +151,26 @@
             },
             "type": "library",
             "autoload": {
-                "files": [
-                    "src/functions.php",
-                    "src/Support/functions.php"
-                ],
                 "psr-4": {
                     "Jengo\\Base\\": "src/",
                     "Jengo\\Base\\Vite\\": "src/Vite/"
+                },
+                "files": [
+                    "src/functions.php",
+                    "src/Support/functions.php"
+                ]
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Tests\\": "tests/",
+                    "Tests\\Support\\": "tests/_support/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -175,11 +181,9 @@
                 }
             ],
             "description": "Modern web development library for CodeIgniter 4 with Vite, modules, unified setups, and automated CLI installer.",
-            "support": {
-                "issues": "https://github.com/lipex-org/jengo-base/issues",
-                "source": "https://github.com/lipex-org/jengo-base/tree/v1.1.63"
-            },
-            "time": "2026-09-18T06:42:07+00:00"
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "laminas/laminas-escaper",
@@ -766,47 +770,49 @@
         },
         {
             "name": "symfony/console",
-            "version": "v7.4.19",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "3a1973458b153f566a8d7499bc06ece323d60063"
+                "reference": "29afb89f4e941f68a6e90f28e3f52ff1f6793a7d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/3a1973458b153f566a8d7499bc06ece323d60063",
-                "reference": "3a1973458b153f566a8d7499bc06ece323d60063",
+                "url": "https://api.github.com/repos/symfony/console/zipball/29afb89f4e941f68a6e90f28e3f52ff1f6793a7d",
+                "reference": "29afb89f4e941f68a6e90f28e3f52ff1f6793a7d",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.2",
+                "php": ">=8.4.1",
                 "symfony/deprecation-contracts": "^2.5|^3",
-                "symfony/polyfill-mbstring": "~1.0",
+                "symfony/polyfill-mbstring": "^1.0",
+                "symfony/polyfill-php85": "^1.32",
                 "symfony/service-contracts": "^2.5|^3",
-                "symfony/string": "^7.2|^8.0"
+                "symfony/string": "^7.4.6|^8.0.6"
             },
             "conflict": {
-                "symfony/dependency-injection": "<6.4",
-                "symfony/dotenv": "<6.4",
-                "symfony/event-dispatcher": "<6.4",
-                "symfony/lock": "<6.4",
-                "symfony/process": "<6.4"
+                "symfony/dependency-injection": "<8.1",
+                "symfony/event-dispatcher": "<8.1"
             },
             "provide": {
                 "psr/log-implementation": "1.0|2.0|3.0"
             },
             "require-dev": {
                 "psr/log": "^1|^2|^3",
-                "symfony/config": "^6.4|^7.0|^8.0",
-                "symfony/dependency-injection": "^6.4|^7.0|^8.0",
-                "symfony/event-dispatcher": "^6.4|^7.0|^8.0",
-                "symfony/http-foundation": "^6.4|^7.0|^8.0",
-                "symfony/http-kernel": "^6.4|^7.0|^8.0",
-                "symfony/lock": "^6.4|^7.0|^8.0",
-                "symfony/messenger": "^6.4|^7.0|^8.0",
-                "symfony/process": "^6.4|^7.0|^8.0",
-                "symfony/stopwatch": "^6.4|^7.0|^8.0",
-                "symfony/var-dumper": "^6.4|^7.0|^8.0"
+                "symfony/config": "^7.4|^8.0",
+                "symfony/dependency-injection": "^8.1",
+                "symfony/event-dispatcher": "^8.1",
+                "symfony/filesystem": "^7.4|^8.0",
+                "symfony/http-foundation": "^7.4|^8.0",
+                "symfony/http-kernel": "^7.4|^8.0",
+                "symfony/lock": "^7.4|^8.0",
+                "symfony/messenger": "^7.4|^8.0",
+                "symfony/mime": "^7.4|^8.0",
+                "symfony/process": "^7.4|^8.0",
+                "symfony/stopwatch": "^7.4|^8.0",
+                "symfony/uid": "^7.4|^8.0",
+                "symfony/validator": "^7.4|^8.0",
+                "symfony/var-dumper": "^7.4|^8.0"
             },
             "type": "library",
             "autoload": {
@@ -840,7 +846,7 @@
                 "terminal"
             ],
             "support": {
-                "source": "https://github.com/symfony/console/tree/v7.4.19"
+                "source": "https://github.com/symfony/console/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -860,7 +866,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-13T10:38:41+00:00"
+            "time": "2026-09-13T10:55:57+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -1356,6 +1362,86 @@
             "time": "2026-05-27T06:59:30+00:00"
         },
         {
+            "name": "symfony/polyfill-php85",
+            "version": "v1.41.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/polyfill-php85.git",
+                "reference": "255fab485aaa1006ed411040c42aecd7b5302d7a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/255fab485aaa1006ed411040c42aecd7b5302d7a",
+                "reference": "255fab485aaa1006ed411040c42aecd7b5302d7a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2"
+            },
+            "type": "library",
+            "extra": {
+                "thanks": {
+                    "url": "https://github.com/symfony/polyfill",
+                    "name": "symfony/polyfill"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "Symfony\\Polyfill\\Php85\\": ""
+                },
+                "classmap": [
+                    "Resources/stubs"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nicolas Grekas",
+                    "email": "p@tchwork.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Symfony polyfill backporting some PHP 8.5+ features to lower PHP versions",
+            "homepage": "https://symfony.com",
+            "keywords": [
+                "compatibility",
+                "polyfill",
+                "portable",
+                "shim"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/polyfill-php85/tree/v1.41.0"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2026-07-01T12:47:55+00:00"
+        },
+        {
             "name": "symfony/service-contracts",
             "version": "v3.7.3",
             "source": {
@@ -1534,31 +1620,31 @@
         },
         {
             "name": "symfony/var-dumper",
-            "version": "v7.4.18",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "e088da50b813f32473a76871616cbb8fa54653a8"
+                "reference": "741a8c4c948b0bb9bd3653daacd3644c73c40ea5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/e088da50b813f32473a76871616cbb8fa54653a8",
-                "reference": "e088da50b813f32473a76871616cbb8fa54653a8",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/741a8c4c948b0bb9bd3653daacd3644c73c40ea5",
+                "reference": "741a8c4c948b0bb9bd3653daacd3644c73c40ea5",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.2",
-                "symfony/deprecation-contracts": "^2.5|^3",
-                "symfony/polyfill-mbstring": "~1.0"
+                "php": ">=8.4.1",
+                "symfony/polyfill-mbstring": "^1.0"
             },
             "conflict": {
-                "symfony/console": "<6.4"
+                "symfony/console": "<7.4",
+                "symfony/error-handler": "<7.4"
             },
             "require-dev": {
-                "symfony/console": "^6.4|^7.0|^8.0",
-                "symfony/http-kernel": "^6.4|^7.0|^8.0",
-                "symfony/process": "^6.4|^7.0|^8.0",
-                "symfony/uid": "^6.4|^7.0|^8.0",
+                "symfony/console": "^7.4|^8.0",
+                "symfony/http-kernel": "^7.4|^8.0",
+                "symfony/process": "^7.4|^8.0",
+                "symfony/uid": "^7.4|^8.0",
                 "twig/twig": "^3.12|^4.0"
             },
             "bin": [
@@ -1597,7 +1683,7 @@
                 "dump"
             ],
             "support": {
-                "source": "https://github.com/symfony/var-dumper/tree/v7.4.18"
+                "source": "https://github.com/symfony/var-dumper/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -1617,7 +1703,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-30T20:10:52+00:00"
+            "time": "2026-09-03T16:02:27+00:00"
         },
         {
             "name": "symfony/var-exporter",
@@ -1704,22 +1790,22 @@
         },
         {
             "name": "vima/codeigniter",
-            "version": "v1.0.14",
+            "version": "v1.0.16",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lipex-org/vima-codeigniter.git",
-                "reference": "56d326b6ec8d48ad9629d0347399e79f9d71a4c4"
+                "reference": "78422cb3220bcfa8c62e9e05eeda62e6deb39543"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lipex-org/vima-codeigniter/zipball/56d326b6ec8d48ad9629d0347399e79f9d71a4c4",
-                "reference": "56d326b6ec8d48ad9629d0347399e79f9d71a4c4",
+                "url": "https://api.github.com/repos/lipex-org/vima-codeigniter/zipball/78422cb3220bcfa8c62e9e05eeda62e6deb39543",
+                "reference": "78422cb3220bcfa8c62e9e05eeda62e6deb39543",
                 "shasum": ""
             },
             "require": {
                 "codeigniter4/framework": "^4.7",
                 "php": ">=8.5",
-                "vima/core": "^1.0"
+                "vima/core": "*"
             },
             "require-dev": {
                 "phpunit/phpunit": "^13.1"
@@ -1742,29 +1828,29 @@
             "description": "CodeIgniter 4 implementation of Vima access control",
             "support": {
                 "issues": "https://github.com/lipex-org/vima-codeigniter/issues",
-                "source": "https://github.com/lipex-org/vima-codeigniter/tree/v1.0.14"
+                "source": "https://github.com/lipex-org/vima-codeigniter/tree/v1.0.16"
             },
-            "time": "2026-08-29T12:23:34+00:00"
+            "time": "2026-09-18T12:46:41+00:00"
         },
         {
             "name": "vima/core",
-            "version": "v1.0.13",
+            "version": "v1.0.18",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lipex-org/vima-core.git",
-                "reference": "2ad9a0390962162b91a8ce8bf330e9b5dd06131b"
+                "reference": "b41134e5756d5ff21c3c43e6f677033b1ffaa75d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lipex-org/vima-core/zipball/2ad9a0390962162b91a8ce8bf330e9b5dd06131b",
-                "reference": "2ad9a0390962162b91a8ce8bf330e9b5dd06131b",
+                "url": "https://api.github.com/repos/lipex-org/vima-core/zipball/b41134e5756d5ff21c3c43e6f677033b1ffaa75d",
+                "reference": "b41134e5756d5ff21c3c43e6f677033b1ffaa75d",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.5",
                 "symfony/cache": "^8.0",
-                "symfony/console": "^7.3",
-                "symfony/var-dumper": "^7.3"
+                "symfony/console": "^8.1",
+                "symfony/var-dumper": "^8.1"
             },
             "require-dev": {
                 "phpunit/phpunit": "^13.2"
@@ -1791,9 +1877,9 @@
             "description": "Framework-agnostic RBAC + ABAC access control engine with pluggable storage backends and a built-in CLI.",
             "support": {
                 "issues": "https://github.com/lipex-org/vima-core/issues",
-                "source": "https://github.com/lipex-org/vima-core/tree/v1.0.13"
+                "source": "https://github.com/lipex-org/vima-core/tree/v1.0.18"
             },
-            "time": "2026-08-29T11:35:53+00:00"
+            "time": "2026-09-18T09:38:02+00:00"
         }
     ],
     "packages-dev": [
@@ -2040,16 +2126,16 @@
         },
         {
             "name": "phpunit/php-code-coverage",
-            "version": "14.3.3",
+            "version": "14.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "f8640c238e930b914d0098a1edbad6652e61a64a"
+                "reference": "96af7aaa1e15561a67b2fa5b98906b063ebec9c2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/f8640c238e930b914d0098a1edbad6652e61a64a",
-                "reference": "f8640c238e930b914d0098a1edbad6652e61a64a",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/96af7aaa1e15561a67b2fa5b98906b063ebec9c2",
+                "reference": "96af7aaa1e15561a67b2fa5b98906b063ebec9c2",
                 "shasum": ""
             },
             "require": {
@@ -2057,7 +2143,7 @@
                 "ext-libxml": "*",
                 "ext-mbstring": "*",
                 "ext-xmlwriter": "*",
-                "nikic/php-parser": "^5.8.0",
+                "nikic/php-parser": "^5.9.0",
                 "php": ">=8.4",
                 "phpunit/php-text-template": "^6.0",
                 "sebastian/complexity": "^6.0",
@@ -2068,7 +2154,7 @@
                 "theseer/tokenizer": "^2.0.1"
             },
             "require-dev": {
-                "phpunit/phpunit": "^13.3.3"
+                "phpunit/phpunit": "^13.3.4"
             },
             "suggest": {
                 "ext-pcov": "PHP extension that provides line coverage",
@@ -2106,7 +2192,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-code-coverage/issues",
                 "security": "https://github.com/sebastianbergmann/php-code-coverage/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/14.3.3"
+                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/14.3.5"
             },
             "funding": [
                 {
@@ -2126,7 +2212,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-10T13:08:32+00:00"
+            "time": "2026-09-25T08:28:49+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -2423,16 +2509,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "13.3.4",
+            "version": "13.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "d19d90cf860efb7e4d96cee8243e06a248578085"
+                "reference": "1b482b9a77774705a5c4a47ab7d60819d2589e90"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/d19d90cf860efb7e4d96cee8243e06a248578085",
-                "reference": "d19d90cf860efb7e4d96cee8243e06a248578085",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/1b482b9a77774705a5c4a47ab7d60819d2589e90",
+                "reference": "1b482b9a77774705a5c4a47ab7d60819d2589e90",
                 "shasum": ""
             },
             "require": {
@@ -2446,7 +2532,7 @@
                 "phar-io/manifest": "^2.0.4",
                 "phar-io/version": "^3.2.1",
                 "php": ">=8.4.1",
-                "phpunit/php-code-coverage": "^14.3.3",
+                "phpunit/php-code-coverage": "^14.3.5",
                 "phpunit/php-file-iterator": "^7.0.2",
                 "phpunit/php-invoker": "^7.0.0",
                 "phpunit/php-text-template": "^6.0.0",
@@ -2503,7 +2589,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/13.3.4"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/13.3.5"
             },
             "funding": [
                 {
@@ -2511,7 +2597,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2026-09-15T07:37:05+00:00"
+            "time": "2026-09-25T08:41:20+00:00"
         },
         {
             "name": "sebastian/cli-parser",
