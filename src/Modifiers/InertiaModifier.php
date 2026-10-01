@@ -35,7 +35,8 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         // 2. Views / GET actions
-        if ($data->view !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show')) {
+        $hasResolvedComponent = $this->resolveComponentForAction($action, $data->view) !== null;
+        if ($data->view !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index') || $hasResolvedComponent) {
             if (! class_exists(Inertia::class)) {
                 throw new \RuntimeException(
                     'The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia'
@@ -74,6 +75,8 @@ class InertiaModifier implements ResponseModifierInterface
             'magic_link.view'     => $views['magicLink'] ?? null,
             'magic_link.sent'     => $views['magicLinkSent'] ?? null,
             'action.show'         => $views['action_mfa'] ?? null,
+            'sudo.view', 'auth.sudo' => $views['sudo'] ?? null,
+            'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? null,
             default               => null,
         };
 
@@ -96,6 +99,8 @@ class InertiaModifier implements ResponseModifierInterface
             'magic_link.view'     => 'Auth/MagicLink',
             'magic_link.sent'     => 'Auth/MagicLinkSent',
             'action.show'         => 'Auth/MfaChallenge',
+            'sudo.view', 'auth.sudo' => 'Auth/SudoChallenge',
+            'two_factor.view', 'two_factor.index' => 'Auth/TwoFactorSettings',
             default               => 'Auth/' . ucfirst(str_replace(['.', '_'], '', $action)),
         };
     }

@@ -88,6 +88,8 @@ class RouteRegistrar
             'magic-link'      => 'magic-link',
             'action'          => 'auth/action',
             'tokens'          => 'api/tokens',
+            'sudo'            => 'auth/sudo',
+            'two-factor'      => 'user/two-factor',
         ];
         $configPaths = (array) ($config->routePaths ?? []);
         $optionPaths = (array) ($options['paths'] ?? []);
@@ -101,6 +103,8 @@ class RouteRegistrar
             'magic-link'      => MagicLinkController::class,
             'action'          => ActionController::class,
             'tokens'          => TokenController::class,
+            'sudo'            => \Jengo\Auth\Controllers\SudoController::class,
+            'two-factor'      => \Jengo\Auth\Controllers\TwoFactorSettingsController::class,
         ];
         $configControllers = (array) ($config->routeControllers ?? []);
         $optionControllers = (array) ($options['controllers'] ?? []);
@@ -194,7 +198,29 @@ class RouteRegistrar
             $routes->post($pathAction . '/handle', [$actionCtrl, 'handle'], ['as' => 'auth.action.handle']);
         }
 
-        // 6. Personal Access Tokens
+        // 6. Sudo Mode
+        if (static::isFlowEnabled('sudo', $only, $except, true)) {
+            $sudoCtrl = $controllers['sudo'] ?? \Jengo\Auth\Controllers\SudoController::class;
+            $pathSudo = trim((string) ($paths['sudo'] ?? 'auth/sudo'), '/');
+
+            $routes->get($pathSudo, [$sudoCtrl, 'index'], ['as' => 'auth.sudo']);
+            $routes->post($pathSudo . '/challenge', [$sudoCtrl, 'challenge'], ['as' => 'auth.sudo.challenge']);
+            $routes->post($pathSudo . '/verify', [$sudoCtrl, 'verify'], ['as' => 'auth.sudo.verify']);
+            $routes->post($pathSudo . '/exit', [$sudoCtrl, 'exit'], ['as' => 'auth.sudo.exit']);
+        }
+
+        // 7. Two-Factor Settings & Enrollment
+        if (static::isFlowEnabled('two-factor', $only, $except, true)) {
+            $twoFactorCtrl = $controllers['two-factor'] ?? \Jengo\Auth\Controllers\TwoFactorSettingsController::class;
+            $pathTwoFactor = trim((string) ($paths['two-factor'] ?? 'user/two-factor'), '/');
+
+            $routes->get($pathTwoFactor, [$twoFactorCtrl, 'index'], ['as' => 'two-factor.index']);
+            $routes->post($pathTwoFactor . '/enroll/start', [$twoFactorCtrl, 'startEnrollment'], ['as' => 'two-factor.enroll.start']);
+            $routes->post($pathTwoFactor . '/enroll/confirm', [$twoFactorCtrl, 'confirmEnrollment'], ['as' => 'two-factor.enroll.confirm']);
+            $routes->post($pathTwoFactor . '/unenroll', [$twoFactorCtrl, 'unenroll'], ['as' => 'two-factor.unenroll']);
+        }
+
+        // 8. Personal Access Tokens
         if (static::isFlowEnabled('tokens', $only, $except, (bool) ($config->allowTokens ?? true))) {
             $tokenCtrl = $controllers['tokens'] ?? TokenController::class;
             $pathTokens = trim((string) ($paths['tokens'] ?? 'api/tokens'), '/');

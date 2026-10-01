@@ -401,4 +401,85 @@ class AuthWorkflowAndModifiersTest extends TestCase
 
         config('Auth')->actions['register'] = null;
     }
+
+    public function testSudoAndTwoFactorResponseModifiers(): void
+    {
+        // 1. Register and login user
+        config('Auth')->actions['register'] = null;
+        config('Auth')->actions['login'] = null;
+        config('Auth')->responseModifier = JsonModifier::class;
+
+        $request = Services::request();
+        $request->setBody(json_encode([
+            'username'         => 'grace_mfa',
+            'email'            => 'grace@example.com',
+            'password'         => 'Secret1234!',
+            'password_confirm' => 'Secret1234!',
+        ]));
+
+        $handler = new \Jengo\Auth\Forms\RegisterFormHandler($request);
+        $handler->validate();
+        \Jengo\Base\Validation\FormHandler::setLastInstance($handler);
+
+        $registerController = new RegisterController();
+        $registerController->initController($request, Services::response(), Services::logger());
+        $regResponse = $registerController->attemptRegister();
+        $this->assertSame(201, $regResponse->getStatusCode());
+
+        // 2. Test Two-Factor Index & Enrollment with JsonModifier
+        $twoFactorController = new \Jengo\Auth\Controllers\TwoFactorSettingsController();
+        $twoFactorController->initController($request, Services::response(), Services::logger());
+
+        $indexResponse = $twoFactorController->index();
+        $this->assertSame(200, $indexResponse->getStatusCode());
+        $indexData = json_decode($indexResponse->getBody(), true);
+        $this->assertSame('two_factor.index', $indexData['action']);
+        $this->assertArrayHasKey('available_factors', $indexData['data']);
+
+        // Start TOTP enrollment
+        $request->setBody(json_encode(['factor' => 'totp']));
+        $startResponse = $twoFactorController->startEnrollment();
+        $this->assertSame(200, $startResponse->getStatusCode());
+        $startData = json_decode($startResponse->getBody(), true);
+        $this->assertSame('two_factor.enroll.start', $startData['action']);
+        $secret = $startData['data']['data']['secret'];
+
+        // Confirm TOTP enrollment
+        $code = \Jengo\Auth\TwoFactor\Engines\TotpEngine::generateCode($secret);
+
+        $request->setBody(json_encode(['factor' => 'totp', 'proof' => $code]));
+        $confirmResponse = $twoFactorController->confirmEnrollment();
+        $this->assertSame(200, $confirmResponse->getStatusCode());
+        $confirmData = json_decode($confirmResponse->getBody(), true);
+        $this->assertSame('two_factor.enroll.confirm', $confirmData['action']);
+
+        // 3. Test Sudo challenge and verification with JsonModifier
+        $sudoController = new \Jengo\Auth\Controllers\SudoController();
+        $sudoController->initController($request, Services::response(), Services::logger());
+
+        $sudoViewResponse = $sudoController->index();
+        $this->assertSame(200, $sudoViewResponse->getStatusCode());
+        $sudoViewData = json_decode($sudoViewResponse->getBody(), true);
+        $this->assertSame('sudo.view', $sudoViewData['action']);
+
+        // Sudo verify TOTP code
+        $validSudoCode = \Jengo\Auth\TwoFactor\Engines\TotpEngine::generateCode($secret);
+        $request->setBody(json_encode(['factor' => 'totp', 'proof' => $validSudoCode]));
+        $verifyResponse = $sudoController->verify();
+        $this->assertSame(200, $verifyResponse->getStatusCode());
+        $verifyData = json_decode($verifyResponse->getBody(), true);
+        $this->assertSame('sudo.verified', $verifyData['action']);
+
+        // Sudo exit
+        $exitResponse = $sudoController->exit();
+        $this->assertSame(200, $exitResponse->getStatusCode());
+        $exitData = json_decode($exitResponse->getBody(), true);
+        $this->assertSame('sudo.exit', $exitData['action']);
+
+        // 4. Test Sudo & TwoFactor with StandardViewModifier
+        config('Auth')->responseModifier = StandardViewModifier::class;
+        $htmlResponse = $sudoController->index();
+        // Since already active in sudo, it redirects
+        $this->assertTrue($htmlResponse->getStatusCode() === 200 || $htmlResponse->isRedirect());
+    }
 }

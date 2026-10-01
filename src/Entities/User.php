@@ -198,4 +198,38 @@ class User extends BaseEntity
 
         return $this;
     }
+
+    /**
+     * Check if user has any active two-factor factors enrolled.
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return count(\Config\Services::twoFactor()->enrolledDriversFor($this)) > 0;
+    }
+
+    /**
+     * Get all enrolled two-factor drivers for this user.
+     */
+    public function enrolledFactors(): array
+    {
+        return \Config\Services::twoFactor()->enrolledDriversFor($this);
+    }
+
+    /**
+     * Get user's registered passkeys list.
+     */
+    public function passkeys(): array
+    {
+        $db = \Config\Database::connect();
+        if (!$db->tableExists('auth_user_passkeys')) {
+            return [];
+        }
+
+        return $db->table('auth_user_passkeys')
+            ->where('user_id', $this->getId())
+            ->orderBy('created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
 }
+

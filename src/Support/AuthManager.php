@@ -460,4 +460,15 @@ class AuthManager
     {
         return $this->rateLimiter;
     }
+
+    public function twoFactor(): \Jengo\Auth\TwoFactor\TwoFactorManager
+    {
+        return Services::twoFactor();
+    }
+
+    public function sudo(): \Jengo\Auth\Sudo\SudoManager
+    {
+        return Services::sudo();
+    }
 }
+

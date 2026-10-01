@@ -23,4 +23,26 @@ class Services extends BaseService
     {
         return \Vima\CodeIgniter\Config\Services::vima($getShared);
     }
+
+    public static function twoFactor(bool $getShared = true): \Jengo\Auth\TwoFactor\TwoFactorManager
+    {
+        if ($getShared) {
+            return static::getSharedInstance('twoFactor');
+        }
+
+        $config = config('Auth');
+        $customDrivers = (array) ($config->twoFactor['drivers'] ?? []);
+
+        return new \Jengo\Auth\TwoFactor\TwoFactorManager($customDrivers);
+    }
+
+    public static function sudo(bool $getShared = true): \Jengo\Auth\Sudo\SudoManager
+    {
+        if ($getShared) {
+            return static::getSharedInstance('sudo');
+        }
+
+        return new \Jengo\Auth\Sudo\SudoManager(static::twoFactor());
+    }
 }
+

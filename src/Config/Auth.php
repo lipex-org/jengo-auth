@@ -79,16 +79,42 @@ class Auth extends BaseConfig
     ];
 
     /**
+     * Multi-Factor / Two-Factor Authentication configuration.
+     */
+    public array $twoFactor = [
+        "enabled" => true,
+        "drivers" => [
+            "passkey"       => \Jengo\Auth\TwoFactor\Drivers\PasskeyDriver::class,
+            "totp"          => \Jengo\Auth\TwoFactor\Drivers\TotpDriver::class,
+            "email_otp"     => \Jengo\Auth\TwoFactor\Drivers\EmailOtpDriver::class,
+            "recovery_code" => \Jengo\Auth\TwoFactor\Drivers\RecoveryCodeDriver::class,
+            "password"      => \Jengo\Auth\TwoFactor\Drivers\PasswordDriver::class,
+        ],
+        "default" => "passkey",
+    ];
+
+    /**
+     * Sudo Mode (Step-up privileged action re-verification) configuration.
+     */
+    public array $sudo = [
+        "enabled"  => true,
+        "lifetime" => 7200, // 2 hours
+        "factors"  => ["passkey", "totp", "password", "email_otp", "recovery_code"],
+    ];
+
+    /**
      * View templates for standard HTML responses.
      */
     public array $views = [
-        "login" => "Jengo\Auth\Views\login",
-        "register" => 'Jengo\Auth\Views\register',
-        "forgotPassword" => 'Jengo\Auth\Views\forgot_password',
-        "resetPassword" => 'Jengo\Auth\Views\reset_password',
-        "magicLink" => "Jengo\Auth\Views\magic_link",
-        "magicLinkSent" => "Jengo\Auth\Views\magic_link_sent",
-        "action_mfa" => "Jengo\Auth\Views\mfa_challenge",
+        "login"               => "Jengo\Auth\Views\login",
+        "register"            => 'Jengo\Auth\Views\register',
+        "forgotPassword"      => 'Jengo\Auth\Views\forgot_password',
+        "resetPassword"       => 'Jengo\Auth\Views\reset_password',
+        "magicLink"           => "Jengo\Auth\Views\magic_link",
+        "magicLinkSent"       => "Jengo\Auth\Views\magic_link_sent",
+        "action_mfa"          => "Jengo\Auth\Views\mfa_challenge",
+        "sudo"                => "Jengo\Auth\Views\sudo_challenge",
+        'two_factor_settings' => 'Jengo\\Auth\\Views\\two_factor_settings',
     ];
 
     /**

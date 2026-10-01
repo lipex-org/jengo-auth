@@ -33,14 +33,12 @@ class AuthFilter implements FilterInterface
             }
         }
 
-        // Standard filter route arguments check
-        if (! empty($arguments)) {
-            $guardName = $arguments[0] ?? null;
-            $guard = $guardName ? $auth->guard($guardName) : $auth->guard();
+        // Standard filter route check: default to standard auth guard if no arguments specified
+        $guardName = $arguments[0] ?? null;
+        $guard = $guardName ? $auth->guard($guardName) : $auth->guard();
 
-            if (! $guard->check()) {
-                return $this->unauthorizedResponse($request);
-            }
+        if (! $guard->check()) {
+            return $this->unauthorizedResponse($request);
         }
 
         return null;
@@ -139,6 +137,21 @@ class AuthFilter implements FilterInterface
                 if (! $auth->can($instance->permission, $resource)) {
                     return $this->forbiddenResponse($request, "Unauthorized action [{$instance->permission}].");
                 }
+            }
+        }
+
+        // 5. Check #[Sudo] attribute
+        $sudoAttr = $refClass->getAttributes(\Jengo\Auth\Attributes\Sudo::class)[0] ?? null;
+        if (method_exists($controllerName, $methodName)) {
+            $refMethod = new ReflectionMethod($controllerName, $methodName);
+            $sudoAttr = $refMethod->getAttributes(\Jengo\Auth\Attributes\Sudo::class)[0] ?? $sudoAttr;
+        }
+
+        if ($sudoAttr !== null) {
+            $sudoFilter = new SudoFilter();
+            $sudoResult = $sudoFilter->before($request);
+            if ($sudoResult !== null) {
+                return $sudoResult;
             }
         }
 

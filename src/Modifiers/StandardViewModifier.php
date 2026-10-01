@@ -39,10 +39,11 @@ class StandardViewModifier implements ResponseModifierInterface
             return $redirect;
         }
 
-        // 2. GET / View actions (ending in .view or explicit view provided)
-        if ($data->view !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show')) {
-            $viewName = $data->view ?? $this->resolveViewForAction($action);
-            if ($viewName && (file_exists(APPPATH . 'Views/' . $viewName . '.php') || function_exists('view'))) {
+        // 2. GET / View actions (explicit view set, matching resolved view, or action naming convention)
+        $viewName = $data->view ?? $this->resolveViewForAction($action);
+
+        if ($viewName !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index')) {
+            if ($viewName && function_exists('view')) {
                 try {
                     $html = view($viewName, array_merge($data->data, [
                         'user'    => $data->user,
@@ -55,7 +56,18 @@ class StandardViewModifier implements ResponseModifierInterface
                 }
             }
 
-            return $response->setStatusCode($data->statusCode)->setBody("Auth View [{$action}]");
+            if ($viewName) {
+                return $response->setStatusCode($data->statusCode)->setBody("Auth View [{$viewName}]");
+            }
+        }
+
+        // 3. Mutation API/JSON actions without redirect
+        if ($data->redirectTo === null && ! empty($data->data)) {
+            return $response->setStatusCode($data->statusCode)->setJSON(array_merge([
+                'action'  => $action,
+                'status'  => $data->status,
+                'message' => $data->message,
+            ], $data->data));
         }
 
         // 3. Mutation Success Actions -> Redirect
@@ -82,6 +94,8 @@ class StandardViewModifier implements ResponseModifierInterface
             'magic_link.view'     => $views['magicLink'] ?? 'Jengo\Auth\Views\magic_link',
             'magic_link.sent'     => $views['magicLinkSent'] ?? 'Jengo\Auth\Views\magic_link_sent',
             'action.show'         => $views['action_mfa'] ?? 'Jengo\Auth\Views\mfa_challenge',
+            'sudo.view', 'auth.sudo' => $views['sudo'] ?? 'Jengo\Auth\Views\sudo_challenge',
+            'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? 'Jengo\\Auth\\Views\\two_factor_settings',
             default               => null,
         };
     }

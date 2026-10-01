@@ -18,8 +18,11 @@ class Registrar
         return [
             'aliases' => [
                 'auth'       => AuthFilter::class,
-                'role'             => RoleFilter::class,
-                'permission'       => PermissionFilter::class,
+                'session'    => AuthFilter::class,
+                'sudo'       => \Jengo\Auth\Filters\SudoFilter::class,
+                'tokens'     => \Jengo\Auth\Filters\TokenFilter::class,
+                'role'       => RoleFilter::class,
+                'permission' => PermissionFilter::class,
             ],
         ];
     }

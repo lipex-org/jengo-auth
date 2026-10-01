@@ -66,6 +66,26 @@ if (!function_exists('can_all')) {
     }
 }
 
+if (!function_exists('sudo')) {
+    /**
+     * Access the Jengo SudoManager instance.
+     */
+    function sudo(): \Jengo\Auth\Sudo\SudoManager
+    {
+        return Services::sudo();
+    }
+}
+
+if (!function_exists('two_factor')) {
+    /**
+     * Access the Jengo TwoFactorManager instance.
+     */
+    function two_factor(): \Jengo\Auth\TwoFactor\TwoFactorManager
+    {
+        return Services::twoFactor();
+    }
+}
+
 if (!function_exists('auth_url')) {
     /**
      * Resolves a named auth route URL using url_to(), falling back gracefully to site_url if routes have not been registered.
@@ -91,9 +111,14 @@ if (!function_exists('auth_url')) {
             'magic-link.verify'  => 'magic-link/verify' . (!empty($params) ? '/' . $params[0] : ''),
             'auth.action.show'   => 'auth/action/show',
             'auth.action.handle' => 'auth/action/handle',
+            'auth.sudo'          => 'auth/sudo',
+            'auth.sudo.verify'   => 'auth/sudo/verify',
+            'auth.sudo.exit'     => 'auth/sudo/exit',
+            'two-factor.index'   => 'user/two-factor',
             'tokens.index'       => 'api/tokens',
         ];
 
         return site_url($fallbacks[$routeName] ?? $routeName);
     }
 }
+
