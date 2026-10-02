@@ -56,7 +56,7 @@ class EmailActivator implements AuthActionInterface
         $storedCode = (string) $session->get('activation_code');
         $expires = (int) $session->get('activation_expires');
 
-        $input = $request->getJSON(true) ?? $request->getPost();
+        $input = auth_request_all($request);
         $submittedCode = (string) ($input['code'] ?? $input['token'] ?? $request->getGet('token') ?? '');
 
         if (! $storedCode || time() > $expires) {

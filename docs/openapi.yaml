@@ -1,0 +1,920 @@
+openapi: 3.1.0
+info:
+  title: Jengo Auth API
+  version: 1.0.0
+  description: |
+    Comprehensive OpenAPI 3.1 reference for the `jengo/auth` authentication, authorization,
+    step-up Sudo mode, Multi-Factor Authentication (2FA/MFA), Passkeys (WebAuthn),
+    Magic Links, and Personal Access Tokens (Bearer tokens).
+
+    ### Architecture Highlights
+    - **Adaptive Modifiers**: Supports Standard Blade/PHP Views, JSON APIs, and Inertia.js (React, Vue, Svelte).
+    - **Dual-Bucket Throttling**: Account + IP composite rate limiting.
+    - **Step-Up Sudo Mode**: GitHub-style verification with 2-hour default grace period.
+    - **Zero-Dependency 2FA**: Pure-PHP RFC 6238 TOTP, FIDO2/WebAuthn Passkeys, and Emergency Recovery Codes.
+    - **Vima RBAC/ABAC**: Fluent role and permission policies (`auth()->can()`, `#[Role]`, `#[Can]`).
+
+servers:
+  - url: http://localhost:8080
+    description: Local Development Server
+  - url: https://api.example.com
+    description: Production Server
+
+tags:
+  - name: Session & Login
+    description: Account authentication, session management, and logout.
+  - name: Registration
+    description: New user registration and account onboarding.
+  - name: Password Reset
+    description: Forgot password tokenized reset emails and confirmation.
+  - name: Magic Link
+    description: Passwordless email login flow.
+  - name: Step-Up Auth (Sudo)
+    description: GitHub-style elevation to perform privileged actions.
+  - name: Two-Factor (MFA)
+    description: Authenticator (TOTP), Passkeys (WebAuthn), and Recovery Codes.
+  - name: Post-Auth Action Pipeline
+    description: Mid-auth interception pipeline (MFA challenge, Email activation, Terms).
+  - name: Personal Access Tokens
+    description: Bearer token management for API access.
+
+paths:
+  # =========================================================================
+  # 1. SESSION & LOGIN
+  # =========================================================================
+  /login:
+    get:
+      tags:
+        - Session & Login
+      summary: Display Login Component / Page
+      description: Returns the login view, Inertia page props (`auth/login`), or JSON status.
+      responses:
+        '200':
+          description: Login form rendered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+            text/html:
+              schema:
+                type: string
+    post:
+      tags:
+        - Session & Login
+      summary: Attempt User Authentication
+      description: Authenticates credentials with dual-bucket rate limiting and triggers post-login pipeline actions if configured.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully or additional pipeline action required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+        '401':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '422':
+          description: Validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthValidationErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /logout:
+    post:
+      tags:
+        - Session & Login
+      summary: Log Out Active Session
+      description: Invalidates active session, clears authentication state, and destroys remember-me tokens.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Logged out successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+
+  # =========================================================================
+  # 2. REGISTRATION
+  # =========================================================================
+  /register:
+    get:
+      tags:
+        - Registration
+      summary: Display Registration Form
+      description: Returns registration view or Inertia component (`auth/register`).
+      responses:
+        '200':
+          description: Registration form rendered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+    post:
+      tags:
+        - Registration
+      summary: Register New Account
+      description: Creates user account and credentials, emits registration event, and auto-logs in unless email activation action is enabled.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+        '422':
+          description: Validation errors (e.g. duplicate email/username, weak password).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthValidationErrorResponse'
+
+  # =========================================================================
+  # 3. PASSWORD RESET
+  # =========================================================================
+  /forgot-password:
+    get:
+      tags:
+        - Password Reset
+      summary: Display Forgot Password Form
+      responses:
+        '200':
+          description: Forgot password view rendered.
+    post:
+      tags:
+        - Password Reset
+      summary: Send Password Reset Link
+      description: Generates a secure HMAC time-limited reset token and sends an email notification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset link sent (always returns 200 to prevent user enumeration).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+
+  /reset-password/{token}:
+    get:
+      tags:
+        - Password Reset
+      summary: Display Reset Password Form
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reset password form rendered.
+        '400':
+          description: Invalid or expired reset token.
+
+  /reset-password:
+    post:
+      tags:
+        - Password Reset
+      summary: Attempt Password Reset
+      description: Verifies reset token and updates the user's password hash.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+        '400':
+          description: Invalid or expired token.
+
+  # =========================================================================
+  # 4. MAGIC LINK (PASSWORDLESS)
+  # =========================================================================
+  /magic-link:
+    get:
+      tags:
+        - Magic Link
+      summary: Display Magic Link Request Form
+      responses:
+        '200':
+          description: Magic link form rendered.
+    post:
+      tags:
+        - Magic Link
+      summary: Send Magic Link Email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Magic link sent to user email.
+
+  /magic-link/verify/{token}:
+    get:
+      tags:
+        - Magic Link
+      summary: Verify Magic Link Token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Magic link token verified and session authenticated.
+
+  # =========================================================================
+  # 5. STEP-UP AUTH (SUDO MODE)
+  # =========================================================================
+  /auth/sudo:
+    get:
+      tags:
+        - Step-Up Auth (Sudo)
+      summary: Sudo Mode Status & Challenge Prompt
+      description: Returns active Sudo status, remaining grace period seconds, and list of enrolled verification factors.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Sudo challenge data or active session notice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SudoStatusResponse'
+
+  /auth/sudo/challenge:
+    post:
+      tags:
+        - Step-Up Auth (Sudo)
+      summary: Request Factor Challenge Payload
+      description: Requests cryptographic challenge options for WebAuthn/Passkey assertion or triggers email/SMS OTP dispatch.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [factor]
+              properties:
+                factor:
+                  type: string
+                  enum: [password, totp, passkey, recovery_code, email_otp, sms_otp]
+      responses:
+        '200':
+          description: Challenge options returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseData'
+
+  /auth/sudo/verify:
+    post:
+      tags:
+        - Step-Up Auth (Sudo)
+      summary: Verify Factor Proof & Enter Sudo Mode
+      description: Accepts unified verification proof (Password string, TOTP 6-digit code, Passkey assertion object, or Recovery Code) and unlocks Sudo mode.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SudoVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SudoVerifyRequest'
+      responses:
+        '200':
+          description: Proof verified and Sudo grace period activated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SudoVerifySuccessResponse'
+        '422':
+          description: Verification failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthValidationErrorResponse'
+
+  /auth/sudo/exit:
+    post:
+      tags:
+        - Step-Up Auth (Sudo)
+      summary: Exit Sudo Mode
+      description: Immediately revokes elevated Sudo session grace period.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Sudo mode deactivated.
+
+  # =========================================================================
+  # 6. TWO-FACTOR AUTHENTICATION (2FA SETTINGS)
+  # =========================================================================
+  /user/two-factor:
+    get:
+      tags:
+        - Two-Factor (MFA)
+      summary: List Enrolled & Available 2FA Factors
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 2FA settings status and drivers summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoFactorIndexResponse'
+
+  /user/two-factor/enroll/start:
+    post:
+      tags:
+        - Two-Factor (MFA)
+      summary: Start Factor Enrollment
+      description: Generates TOTP secret + QR code Data URI / SVG, WebAuthn registration options, or emergency recovery codes.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [factor]
+              properties:
+                factor:
+                  type: string
+                  enum: [totp, passkey, recovery_code]
+                options:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Enrollment payload generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoFactorEnrollStartResponse'
+
+  /user/two-factor/enroll/confirm:
+    post:
+      tags:
+        - Two-Factor (MFA)
+      summary: Confirm Factor Enrollment
+      description: Verifies initial factor proof (e.g. 6-digit TOTP code or WebAuthn attestation proof) and activates the method.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [factor]
+              properties:
+                factor:
+                  type: string
+                  enum: [totp, passkey, recovery_code]
+                proof:
+                  oneOf:
+                    - type: string
+                      description: 6-digit TOTP code or recovery code.
+                    - type: object
+                      description: WebAuthn attestation proof object.
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Factor enrolled successfully.
+        '422':
+          description: Confirmation verification failed.
+
+  /user/two-factor/unenroll:
+    post:
+      tags:
+        - Two-Factor (MFA)
+      summary: Remove / Unenroll Factor
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [factor]
+              properties:
+                factor:
+                  type: string
+                  enum: [totp, passkey, recovery_code]
+                credential_id:
+                  type: string
+                  description: Optional Passkey credential ID to delete.
+      responses:
+        '200':
+          description: Factor unenrolled.
+
+  # =========================================================================
+  # 7. POST-AUTH ACTION PIPELINE
+  # =========================================================================
+  /auth/action/show:
+    get:
+      tags:
+        - Post-Auth Action Pipeline
+      summary: Render Current Active Mid-Auth Action Challenge
+      description: Displays the active pipeline action challenge (e.g. MFA TOTP code, Email Activation, Terms).
+      responses:
+        '200':
+          description: Active action component rendered.
+        '404':
+          description: No active action found in pending session.
+
+  /auth/action/handle:
+    post:
+      tags:
+        - Post-Auth Action Pipeline
+      summary: Submit Action Verification
+      description: Verifies the submitted proof. Shifts to the next pending action or finalizes session login upon complete pipeline success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Action verified and login finalized (or redirected to next action).
+        '404':
+          description: Verification failed or invalid session context.
+
+  # =========================================================================
+  # 8. PERSONAL ACCESS TOKENS (API BEARER TOKENS)
+  # =========================================================================
+  /api/tokens:
+    get:
+      tags:
+        - Personal Access Tokens
+      summary: List User Personal Access Tokens
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: List of user tokens (hashed).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TokenItem'
+    post:
+      tags:
+        - Personal Access Tokens
+      summary: Generate New Personal Access Token
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: Deploy Bot Token
+                abilities:
+                  type: array
+                  items:
+                    type: string
+                  default: ["*"]
+      responses:
+        '201':
+          description: Token created. Note that the plainTextToken is only shown once.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenCreatedResponse'
+
+  /api/tokens/{id}:
+    delete:
+      tags:
+        - Personal Access Tokens
+      summary: Revoke Token
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Token revoked successfully.
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: ci_session
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JengoToken
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [password]
+      properties:
+        email:
+          type: string
+          description: User email address or username.
+          example: jane@example.com
+        username:
+          type: string
+          example: jane
+        password:
+          type: string
+          format: password
+          example: SecretPassword123!
+        remember:
+          type: boolean
+          default: false
+
+    RegisterRequest:
+      type: object
+      required: [email, username, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: alex@example.com
+        username:
+          type: string
+          example: alexdev
+        password:
+          type: string
+          format: password
+          example: HighlySecurePass#2026
+        password_confirm:
+          type: string
+          format: password
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, email, password, password_confirm]
+      properties:
+        token:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        password_confirm:
+          type: string
+          format: password
+
+    SudoVerifyRequest:
+      type: object
+      required: [factor, proof]
+      properties:
+        factor:
+          type: string
+          enum: [password, totp, passkey, recovery_code, email_otp, sms_otp]
+          example: password
+        proof:
+          oneOf:
+            - type: string
+              description: Password, 6-digit TOTP code, or recovery code.
+              example: SecretPassword123!
+            - type: object
+              description: WebAuthn assertion proof object for Passkeys.
+        lifetime:
+          type: integer
+          description: Sudo grace period in seconds (default 7200).
+          example: 7200
+
+    AuthResponseData:
+      type: object
+      properties:
+        action:
+          type: string
+          example: login.success
+        status:
+          type: string
+          enum: [success, error, info]
+          example: success
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          nullable: true
+          example: Successfully authenticated.
+        data:
+          type: object
+          additionalProperties: true
+        redirectTo:
+          type: string
+          nullable: true
+          example: /dashboard
+        user:
+          $ref: '#/components/schemas/UserEntity'
+
+    AuthErrorResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: login.failed
+        status:
+          type: string
+          example: error
+        statusCode:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: Invalid credentials.
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
+    AuthValidationErrorResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: validation.failed
+        status:
+          type: string
+          example: error
+        statusCode:
+          type: integer
+          example: 422
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
+    SudoStatusResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: sudo.view
+        status:
+          type: string
+          example: success
+        statusCode:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            sudo_active:
+              type: boolean
+              example: false
+            available_factors:
+              type: array
+              items:
+                $ref: '#/components/schemas/FactorSummary'
+
+    SudoVerifySuccessResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: sudo.verified
+        status:
+          type: string
+          example: success
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Identity verified. Sudo mode activated.
+        data:
+          type: object
+          properties:
+            intended_url:
+              type: string
+              example: /settings/billing
+            expires_at:
+              type: integer
+              example: 1790900000
+            expires_in:
+              type: integer
+              example: 7200
+
+    TwoFactorIndexResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: two_factor.index
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            enrolled_factors:
+              type: array
+              items:
+                $ref: '#/components/schemas/FactorSummary'
+            available_factors:
+              type: array
+              items:
+                $ref: '#/components/schemas/FactorSummary'
+
+    TwoFactorEnrollStartResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: two_factor.enroll.start
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            factor:
+              type: string
+              example: totp
+            data:
+              type: object
+              properties:
+                secret:
+                  type: string
+                  example: JBSWY3DPEHPK3PXP
+                qr_uri:
+                  type: string
+                  example: otpauth://totp/Jengo:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Jengo
+                qr_svg:
+                  type: string
+                  description: Raw SVG vector string of the QR code.
+                qr_data_uri:
+                  type: string
+                  description: Base64 PNG Data URI for <img> tags.
+                codes:
+                  type: array
+                  items:
+                    type: string
+                  description: Plaintext emergency backup recovery codes.
+
+    FactorSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          example: totp
+        label:
+          type: string
+          example: Authenticator App
+        icon:
+          type: string
+          example: smartphone
+        description:
+          type: string
+          example: Enter a 6-digit rolling code.
+        is_enrolled:
+          type: boolean
+          example: true
+
+    UserEntity:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        username:
+          type: string
+          example: jane
+        email:
+          type: string
+          example: jane@example.com
+        active:
+          type: boolean
+          example: true
+
+    TokenItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: CLI Token
+        abilities:
+          type: array
+          items:
+            type: string
+          example: ["*"]
+        last_used_at:
+          type: string
+          nullable: true
+          example: "2026-10-01 12:00:00"
+        created_at:
+          type: string
+          example: "2026-09-20 08:30:00"
+
+    TokenCreatedResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          example: tokens.created
+        status:
+          type: string
+          example: success
+        statusCode:
+          type: integer
+          example: 201
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Plaintext bearer token with ID prefix (e.g. 1|abcdef123456...). Only displayed once.
+              example: "1|7f3e8b0932da4519bcfa2789..."
+            accessToken:
+              $ref: '#/components/schemas/TokenItem'

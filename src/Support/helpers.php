@@ -122,3 +122,68 @@ if (!function_exists('auth_url')) {
     }
 }
 
+if (!function_exists('auth_request_all')) {
+    /**
+     * Safely extract all request input parameters (POST, GET, JSON) without throwing on non-JSON/malformed payloads.
+     */
+    function auth_request_all(?\CodeIgniter\HTTP\RequestInterface $request = null): array
+    {
+        $req = $request ?? (function_exists('request') ? request() : \Config\Services::request());
+        $get = method_exists($req, 'getGet') ? ($req->getGet() ?? []) : [];
+        $post = method_exists($req, 'getPost') ? ($req->getPost() ?? []) : [];
+
+        $json = [];
+        if (method_exists($req, 'getBody')) {
+            $raw = (string) $req->getBody();
+            if ($raw !== '') {
+                $trimmed = trim($raw);
+                if (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '[')) {
+                    try {
+                        $decoded = json_decode($trimmed, true);
+                        if (is_array($decoded)) {
+                            $json = $decoded;
+                        }
+                    } catch (\Throwable) {
+                        // Ignore malformed JSON
+                    }
+                }
+            }
+        }
+
+        if (!empty($json)) {
+            return array_merge($get, $json);
+        }
+
+        if (empty($post) && !empty($_POST)) {
+            $post = $_POST;
+        }
+
+        return array_merge($get, $post);
+    }
+}
+
+if (!function_exists('auth_request_input')) {
+    /**
+     * Safely retrieve a specific input key from the request.
+     */
+    function auth_request_input(?string $key = null, mixed $default = null, ?\CodeIgniter\HTTP\RequestInterface $request = null): mixed
+    {
+        $all = auth_request_all($request);
+
+        if ($key === null) {
+            return $all;
+        }
+
+        $req = $request ?? (function_exists('request') ? request() : \Config\Services::request());
+        if (method_exists($req, 'getVar')) {
+            $val = $req->getVar($key);
+            if ($val !== null) {
+                return $val;
+            }
+        }
+
+        return function_exists('data_get') ? data_get($all, $key, $default) : ($all[$key] ?? $default);
+    }
+}
+
+

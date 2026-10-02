@@ -90,6 +90,8 @@ class TotpDriver implements ChallengeableFactorInterface, VerifiableFactorInterf
         return [
             'secret'      => $secret,
             'qr_uri'      => $otpAuthUri,
+            'qr_svg'      => \Jengo\Base\Support\QrCode::svg($otpAuthUri, 180),
+            'qr_data_uri' => \Jengo\Base\Support\QrCode::pngDataUri($otpAuthUri, 180),
             'account'     => $accountName,
             'issuer'      => $appName,
             'digits'      => 6,

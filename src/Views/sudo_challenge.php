@@ -44,13 +44,13 @@
             <!-- Password Form -->
             <div id="section-password" class="space-y-3">
                 <label class="block text-xs font-medium text-slate-300">Account Password</label>
-                <input type="password" name="password" id="input-password" placeholder="Enter your current password" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="password" name="proof" id="input-password" placeholder="Enter your current password" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <!-- TOTP Form -->
             <div id="section-totp" class="space-y-3 hidden">
                 <label class="block text-xs font-medium text-slate-300">6-Digit Authenticator Code</label>
-                <input type="text" name="code" id="input-totp" placeholder="000 000" maxlength="7" class="w-full text-center tracking-widest text-lg px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" name="proof" id="input-totp" disabled placeholder="000 000" maxlength="7" class="w-full text-center tracking-widest text-lg px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <!-- Passkey Form -->
@@ -67,7 +67,7 @@
             <!-- Recovery Code Form -->
             <div id="section-recovery_code" class="space-y-3 hidden">
                 <label class="block text-xs font-medium text-slate-300">Emergency Recovery Code</label>
-                <input type="text" name="recovery_code" id="input-recovery" placeholder="xxxx-xxxx" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" name="proof" id="input-recovery" disabled placeholder="xxxx-xxxx" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <button type="submit" id="submit-btn" class="w-full py-3 bg-slate-100 hover:bg-white text-slate-950 font-semibold text-sm rounded-xl transition duration-150 shadow-md">
@@ -82,13 +82,16 @@
             ['password', 'totp', 'passkey', 'recovery_code'].forEach(f => {
                 const section = document.getElementById('section-' + f);
                 const btn = document.getElementById('btn-' + f);
+                const input = section ? section.querySelector('input[name="proof"]') : null;
                 if (section && btn) {
                     if (f === factor) {
                         section.classList.remove('hidden');
                         btn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white shadow";
+                        if (input) input.removeAttribute('disabled');
                     } else {
                         section.classList.add('hidden');
                         btn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+                        if (input) input.setAttribute('disabled', 'disabled');
                     }
                 }
             });

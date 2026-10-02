@@ -7,6 +7,10 @@ namespace Jengo\Auth\Controllers;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Auth\Forms\TwoFactorEnrollConfirmFormHandler;
+use Jengo\Auth\Forms\TwoFactorEnrollStartFormHandler;
+use Jengo\Auth\Forms\TwoFactorUnenrollFormHandler;
+use Jengo\Base\Attributes\Validate;
 
 class TwoFactorSettingsController extends BaseAuthController
 {
@@ -16,6 +20,7 @@ class TwoFactorSettingsController extends BaseAuthController
     public function index(): ResponseInterface
     {
         $auth = Services::auth();
+        helper("Jengo\Base\Helpers\jengo");
         if (!$auth->check()) {
             $data = new AuthResponseData(
                 action: 'two_factor.index',
@@ -35,11 +40,11 @@ class TwoFactorSettingsController extends BaseAuthController
         $available = [];
         foreach ($twoFactor->drivers() as $id => $driver) {
             $available[] = [
-                'id'          => $driver->getId(),
-                'label'       => $driver->getLabel(),
-                'icon'        => $driver->getIcon(),
+                'id' => $driver->getId(),
+                'label' => $driver->getLabel(),
+                'icon' => $driver->getIcon(),
                 'description' => $driver->getDescription(),
-                'is_enrolled' => $driver->isEnrolled($user),
+                'is_enrolled' => $driver->isEnrolled($user)
             ];
         }
 
@@ -48,10 +53,10 @@ class TwoFactorSettingsController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             data: [
-                'enrolled_factors'  => $enrolled,
+                'enrolled_factors' => $enrolled,
                 'available_factors' => $available,
-                'enrolledFactors'   => $enrolled,
-                'availableFactors'  => $available,
+                'enrolledFactors' => $enrolled,
+                'availableFactors' => $available,
             ],
             user: $user
         );
@@ -62,6 +67,7 @@ class TwoFactorSettingsController extends BaseAuthController
     /**
      * Start enrolling a new factor (e.g. generate TOTP secret / Passkey options).
      */
+    #[Validate(TwoFactorEnrollStartFormHandler::class)]
     public function startEnrollment(): ResponseInterface
     {
         $auth = Services::auth();
@@ -75,13 +81,15 @@ class TwoFactorSettingsController extends BaseAuthController
             return $this->renderResponse('two_factor.enroll.start', $data);
         }
 
-        $input = $this->request->getJSON(true) ?? $this->request->getPost() ?? [];
-        $driverId = (string) ($input['factor'] ?? '');
+        /** @var TwoFactorEnrollStartFormHandler $form */
+        $form = form();
+        $driverId = $form->getFactor();
+        $options = $form->getOptions();
 
         $twoFactor = Services::twoFactor();
 
         try {
-            $result = $twoFactor->startEnrollment($auth->user(), $driverId, $input['options'] ?? []);
+            $result = $twoFactor->startEnrollment($auth->user(), $driverId, $options);
 
             $data = new AuthResponseData(
                 action: 'two_factor.enroll.start',
@@ -89,7 +97,7 @@ class TwoFactorSettingsController extends BaseAuthController
                 statusCode: 200,
                 data: [
                     'factor' => $driverId,
-                    'data'   => $result,
+                    'data' => $result,
                 ],
                 user: $auth->user()
             );
@@ -108,6 +116,7 @@ class TwoFactorSettingsController extends BaseAuthController
     /**
      * Confirm enrollment with initial verification proof.
      */
+    #[Validate(TwoFactorEnrollConfirmFormHandler::class)]
     public function confirmEnrollment(): ResponseInterface
     {
         $auth = Services::auth();
@@ -121,10 +130,11 @@ class TwoFactorSettingsController extends BaseAuthController
             return $this->renderResponse('two_factor.enroll.confirm', $data);
         }
 
-        $input = $this->request->getJSON(true) ?? $this->request->getPost() ?? [];
-        $driverId = (string) ($input['factor'] ?? '');
-        $proof = $input['proof'] ?? $input['code'] ?? null;
-        $metadata = $input['metadata'] ?? [];
+        /** @var TwoFactorEnrollConfirmFormHandler $form */
+        $form = form();
+        $driverId = $form->getFactor();
+        $proof = $form->getProof();
+        $metadata = $form->getMetadata();
 
         $twoFactor = Services::twoFactor();
 
@@ -164,6 +174,7 @@ class TwoFactorSettingsController extends BaseAuthController
     /**
      * Unenroll / remove a two-factor method.
      */
+    #[Validate(TwoFactorUnenrollFormHandler::class)]
     public function unenroll(): ResponseInterface
     {
         $auth = Services::auth();
@@ -177,9 +188,10 @@ class TwoFactorSettingsController extends BaseAuthController
             return $this->renderResponse('two_factor.unenroll', $data);
         }
 
-        $input = $this->request->getJSON(true) ?? $this->request->getPost() ?? [];
-        $driverId = (string) ($input['factor'] ?? '');
-        $credentialId = $input['credential_id'] ?? null;
+        /** @var TwoFactorUnenrollFormHandler $form */
+        $form = form();
+        $driverId = $form->getFactor();
+        $credentialId = $form->getCredentialId();
 
         $twoFactor = Services::twoFactor();
 

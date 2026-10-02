@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \Jengo\Auth\Entities\User|null $user
+ */
+$currentUser = $user ?? (auth()->check() ? auth()->user() : null);
+?>
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950">
 <head>
@@ -11,7 +17,7 @@
         <!-- Top Navigation -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-5">
             <div>
-                <a href="<?= url_to('/dashboard') ?>" class="text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 mb-1">
+                <a href="<?= site_url('dashboard') ?>" class="text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 mb-1">
                     &larr; Back to Dashboard
                 </a>
                 <h1 class="text-2xl font-bold tracking-tight text-white">Security & Step-Up Auth (Sudo)</h1>
@@ -19,9 +25,12 @@
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-xs font-medium px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                    Logged in as <strong class="text-white"><?= esc(auth()->user()->username ?? 'User') ?></strong>
+                    Logged in as <strong class="text-white"><?= esc($currentUser->username ?? 'User') ?></strong>
                 </span>
-                <a href="<?= url_to('logout') ?>" class="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-950/40 border border-red-800/40 px-3 py-1 rounded-lg">Logout</a>
+                <form action="<?= auth_url('logout') ?>" method="POST" class="inline m-0 p-0">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-950/40 border border-red-800/40 px-3 py-1 rounded-lg">Logout</button>
+                </form>
             </div>
         </div>
 
@@ -109,7 +118,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="font-semibold text-white">Authenticator App (TOTP)</h3>
-                            <?php if (two_factor()->driver('totp')->isEnrolled(auth()->user())): ?>
+                            <?php if ($currentUser && two_factor()->driver('totp')->isEnrolled($currentUser)): ?>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">ENROLLED</span>
                             <?php else: ?>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">NOT CONFIGURED</span>
@@ -119,7 +128,7 @@
                     </div>
                 </div>
                 <div>
-                    <?php if (two_factor()->driver('totp')->isEnrolled(auth()->user())): ?>
+                    <?php if ($currentUser && two_factor()->driver('totp')->isEnrolled($currentUser)): ?>
                         <button onclick="unenrollFactor('totp')" class="px-4 py-2 bg-red-950/40 hover:bg-red-900/60 text-xs font-semibold text-red-400 rounded-xl border border-red-800/40 transition">
                             Remove TOTP
                         </button>
@@ -142,7 +151,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="font-semibold text-white">Passkeys & Security Keys (WebAuthn)</h3>
-                            <?php $passkeysCount = count(auth()->user()->passkeys()); ?>
+                            <?php $passkeysCount = $currentUser ? count($currentUser->passkeys()) : 0; ?>
                             <?php if ($passkeysCount > 0): ?>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><?= $passkeysCount ?> REGISTERED</span>
                             <?php else: ?>
@@ -170,7 +179,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="font-semibold text-white">Emergency Recovery Codes</h3>
-                            <?php if (two_factor()->driver('recovery_code')->isEnrolled(auth()->user())): ?>
+                            <?php if ($currentUser && two_factor()->driver('recovery_code')->isEnrolled($currentUser)): ?>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">ACTIVE</span>
                             <?php else: ?>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">NOT GENERATED</span>
@@ -181,7 +190,7 @@
                 </div>
                 <div>
                     <button onclick="startRecoveryCodeEnrollment()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-xs font-semibold text-white rounded-xl shadow-lg shadow-amber-500/20 transition">
-                        <?= two_factor()->driver('recovery_code')->isEnrolled(auth()->user()) ? 'Regenerate Codes' : 'Generate Codes' ?>
+                        <?= ($currentUser && two_factor()->driver('recovery_code')->isEnrolled($currentUser)) ? 'Regenerate Codes' : 'Generate Codes' ?>
                     </button>
                 </div>
             </div>
@@ -194,7 +203,10 @@
             <h3 class="text-lg font-bold text-white">Setup Authenticator App</h3>
             <p class="text-xs text-slate-400">Scan the QR code or enter the secret key below into your authenticator app.</p>
             
-            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center space-y-2">
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center space-y-3">
+                <div id="totp-qr-container" class="flex justify-center p-2 bg-white rounded-xl w-48 h-48 mx-auto items-center">
+                    <img id="totp-qr-image" src="" alt="TOTP QR Code" class="w-44 h-44 object-contain">
+                </div>
                 <div class="text-xs text-slate-500 uppercase tracking-widest font-bold">Secret Key</div>
                 <div id="totp-secret-text" class="text-base font-mono font-bold text-amber-400 select-all"></div>
                 <div class="text-[11px] text-slate-500 break-all" id="totp-uri-text"></div>
@@ -242,7 +254,10 @@
                 const data = await res.json();
                 if (data.status === 'success') {
                     document.getElementById('totp-secret-text').innerText = data.data.secret;
-                    document.getElementById('totp-uri-text').innerText = data.data.otpauth_uri;
+                    document.getElementById('totp-uri-text').innerText = data.data.qr_uri || data.data.otpauth_uri;
+                    if (data.data.qr_data_uri) {
+                        document.getElementById('totp-qr-image').src = data.data.qr_data_uri;
+                    }
                     document.getElementById('totp-modal').classList.remove('hidden');
                 } else {
                     alert(data.message || 'Failed to initialize TOTP.');
@@ -265,7 +280,9 @@
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({ factor: 'totp', code: code })
                 });
-                const data = await res.json();
+
+                window.location.reload();
+
                 if (data.status === 'success') {
                     alert('Authenticator successfully enrolled!');
                     window.location.reload();

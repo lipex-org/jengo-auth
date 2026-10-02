@@ -85,6 +85,34 @@ abstract class BaseAuthController extends Controller
     }
 
     /**
+     * Safely retrieve an input value from the request (JSON, POST, GET) checking headers without errors.
+     */
+    protected function input(?string $key = null, mixed $default = null): mixed
+    {
+        if (function_exists('auth_request_input')) {
+            return auth_request_input($key, $default, $this->request);
+        }
+
+        if (function_exists('request_input')) {
+            return request_input($key, $default, $this->request);
+        }
+
+        return \Jengo\Base\Facades\Request::input($key, $default, $this->request);
+    }
+
+    /**
+     * Safely retrieve all request input parameters (JSON, POST, GET).
+     */
+    protected function allInput(): array
+    {
+        if (function_exists('auth_request_all')) {
+            return auth_request_all($this->request);
+        }
+
+        return \Jengo\Base\Facades\Request::all($this->request);
+    }
+
+    /**
      * Return a standardized 422 validation failure response.
      * @param string $action
      * @param array $errors

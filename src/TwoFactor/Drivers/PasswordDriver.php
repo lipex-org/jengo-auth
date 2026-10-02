@@ -51,11 +51,23 @@ class PasswordDriver implements VerifiableFactorInterface
 
     protected function resolvePasswordHash(User $user): ?string
     {
-        if (!empty($user->password_hash ?? $user->attributes['password_hash'] ?? null)) {
-            return (string) ($user->password_hash ?? $user->attributes['password_hash']);
+        if (!empty($user->password_hash)) {
+            return (string) $user->password_hash;
         }
 
-        $userId = $user->id ?? $user->attributes['id'] ?? 0;
+        if (!empty($user->password)) {
+            return (string) $user->password;
+        }
+
+        if (isset($user->attributes['password_hash']) && !empty($user->attributes['password_hash'])) {
+            return (string) $user->attributes['password_hash'];
+        }
+
+        if (isset($user->attributes['password']) && !empty($user->attributes['password'])) {
+            return (string) $user->attributes['password'];
+        }
+
+        $userId = $user->id ?? $user->attributes['id'] ?? (method_exists($user, 'getId') ? $user->getId() : 0);
         if (!$userId) {
             return null;
         }

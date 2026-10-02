@@ -54,7 +54,7 @@ class Email2FA implements AuthActionInterface
         $storedCode = (string) $session->get('mfa_code');
         $expires = (int) $session->get('mfa_expires');
 
-        $input = $request->getJSON(true) ?? $request->getPost();
+        $input = auth_request_all($request);
         $submittedCode = (string) ($input['code'] ?? '');
 
         if (! $storedCode || time() > $expires) {

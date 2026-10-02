@@ -81,27 +81,27 @@ class InertiaModifier implements ResponseModifierInterface
         };
 
         if ($configuredView !== null) {
-            // If configured with a custom Inertia component path (e.g. 'Auth/CustomLogin' or 'Pages/Login')
+            // If configured with a custom Inertia component path (e.g. 'auth/custom-login' or 'pages/login')
             if (! str_starts_with($configuredView, 'Jengo\\Auth\\Views\\')) {
                 return $configuredView;
             }
 
             // If configured with a default standard PHP view namespace path, convert cleanly to Inertia component format
             $base = basename(str_replace('\\', '/', $configuredView));
-            return 'Auth/' . ucfirst(str_replace('_', '', ucwords($base, '_')));
+            return 'auth/' . strtolower($base);
         }
 
         return match ($action) {
-            'login.view'          => 'Auth/Login',
-            'register.view'       => 'Auth/Register',
-            'forgot_password.view'=> 'Auth/ForgotPassword',
-            'reset_password.view' => 'Auth/ResetPassword',
-            'magic_link.view'     => 'Auth/MagicLink',
-            'magic_link.sent'     => 'Auth/MagicLinkSent',
-            'action.show'         => 'Auth/MfaChallenge',
-            'sudo.view', 'auth.sudo' => 'Auth/SudoChallenge',
-            'two_factor.view', 'two_factor.index' => 'Auth/TwoFactorSettings',
-            default               => 'Auth/' . ucfirst(str_replace(['.', '_'], '', $action)),
+            'login.view'                          => 'auth/login',
+            'register.view'                       => 'auth/register',
+            'forgot_password.view'                => 'auth/forgot_password',
+            'reset_password.view'                 => 'auth/reset_password',
+            'magic_link.view'                     => 'auth/magic_link',
+            'magic_link.sent'                     => 'auth/magic_link_sent',
+            'action.show'                         => 'auth/mfa_challenge',
+            'sudo.view', 'auth.sudo'              => 'auth/sudo_challenge',
+            'two_factor.view', 'two_factor.index' => 'auth/two_factor_settings',
+            default                               => 'auth/' . strtolower(str_replace(['.', '-'], '_', $action)),
         };
     }
 

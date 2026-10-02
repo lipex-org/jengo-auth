@@ -97,6 +97,26 @@ class RecoveryCodeDriver implements VerifiableFactorInterface, EnrollableFactorI
             'hashed' => $hashedCodes,
         ]);
 
+        // Auto-persist hashed recovery codes to database so they are immediately usable
+        $userId = $this->resolveUserId($user);
+        if ($userId) {
+            $db = Database::connect();
+            if ($db->tableExists('auth_user_two_factor')) {
+                $existing = $db->table('auth_user_two_factor')->where('user_id', $userId)->get()->getRowArray();
+                $data = [
+                    'recovery_codes' => json_encode($hashedCodes),
+                    'updated_at'     => date('Y-m-d H:i:s'),
+                ];
+                if ($existing) {
+                    $db->table('auth_user_two_factor')->where('user_id', $userId)->update($data);
+                } else {
+                    $data['user_id'] = $userId;
+                    $data['created_at'] = date('Y-m-d H:i:s');
+                    $db->table('auth_user_two_factor')->insert($data);
+                }
+            }
+        }
+
         return [
             'codes' => $plainCodes,
             'count' => count($plainCodes),

@@ -1,0 +1,95 @@
+import React from 'react';
+import { useForm, Link } from '@inertiajs/react';
+
+interface ResetPasswordProps {
+  token: string;
+  email?: string;
+  error?: string;
+}
+
+export default function ResetPassword({ token, email, error }: ResetPasswordProps) {
+  const { data, setData, post, processing, errors } = useForm({
+    token: token || '',
+    email: email || '',
+    password: '',
+    password_confirm: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    post('/reset-password');
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-slate-100">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <h1 className="text-2xl font-bold text-white mb-2 text-center">Set New Password</h1>
+        <p className="text-xs text-slate-400 mb-6 text-center">Please enter your new password below.</p>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input type="hidden" name="token" value={data.token} />
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+            <input
+              type="email"
+              value={data.email}
+              onChange={(e) => setData('email', e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="alex@example.com"
+              required
+            />
+            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">New Password</label>
+            <input
+              type="password"
+              value={data.password}
+              onChange={(e) => setData('password', e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="••••••••"
+              required
+              autoFocus
+            />
+            {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={data.password_confirm}
+              onChange={(e) => setData('password_confirm', e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="••••••••"
+              required
+            />
+            {errors.password_confirm && <p className="text-xs text-red-400 mt-1">{errors.password_confirm}</p>}
+          </div>
+
+          <button
+            type="submit"
+            disabled={processing}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl transition duration-150 disabled:opacity-50"
+          >
+            {processing ? 'Updating password...' : 'Update Password'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-xs text-slate-400">
+          <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
+            Back to login
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

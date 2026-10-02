@@ -7,7 +7,10 @@ namespace Jengo\Auth\Controllers;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Auth\Forms\SudoChallengeFormHandler;
+use Jengo\Auth\Forms\SudoVerifyFormHandler;
 use Jengo\Auth\Sudo\SudoManager;
+use Jengo\Base\Attributes\Validate;
 
 class SudoController extends BaseAuthController
 {
@@ -68,6 +71,7 @@ class SudoController extends BaseAuthController
     /**
      * Request a challenge payload for a specific factor (e.g. Passkey options or sending Email OTP).
      */
+    #[Validate(SudoChallengeFormHandler::class)]
     public function challenge(): ResponseInterface
     {
         $auth = Services::auth();
@@ -81,7 +85,9 @@ class SudoController extends BaseAuthController
             return $this->renderResponse('sudo.challenge', $data);
         }
 
-        $driverId = (string) ($this->request->getPost('factor') ?? $this->request->getJSON(true)['factor'] ?? '');
+        /** @var SudoChallengeFormHandler $form */
+        $form = form();
+        $driverId = $form->getFactor();
         $twoFactor = Services::twoFactor();
 
         if (!$twoFactor->hasDriver($driverId)) {
@@ -112,6 +118,7 @@ class SudoController extends BaseAuthController
     /**
      * Verify submitted factor proof and enter Sudo mode.
      */
+    #[Validate(SudoVerifyFormHandler::class)]
     public function verify(): ResponseInterface
     {
         $auth = Services::auth();
@@ -125,10 +132,11 @@ class SudoController extends BaseAuthController
             return $this->renderResponse('sudo.verify', $data);
         }
 
-        $input = $this->request->getJSON(true) ?? $this->request->getPost() ?? [];
-        $driverId = (string) ($input['factor'] ?? '');
-        $proof = $input['proof'] ?? $input['code'] ?? $input['password'] ?? null;
-        $lifetime = $input['lifetime'] ?? config('Auth')->sudo['lifetime'] ?? 7200;
+        /** @var SudoVerifyFormHandler $form */
+        $form = form();
+        $driverId = $form->getFactor();
+        $proof = $form->getProof();
+        $lifetime = $form->getLifetime();
 
         $user = $auth->user();
         $sudo = Services::sudo();

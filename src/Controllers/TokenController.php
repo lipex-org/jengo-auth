@@ -38,7 +38,7 @@ class TokenController extends BaseAuthController
         }
 
         $user = auth()->user();
-        $payload = $this->extractPayload();
+        $payload = $this->allInput();
 
         $name = $payload['name'] ?? 'Personal Access Token';
         $abilities = $payload['abilities'] ?? ['*'];
