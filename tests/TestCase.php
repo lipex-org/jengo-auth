@@ -31,6 +31,9 @@ abstract class TestCase extends CIUnitTestCase
         // Initialize Vima service for tests
         Services::vima();
 
+        // Load Auth helper
+        helper('Jengo\Auth\Helpers\auth');
+
         // Stub email service to avoid shell execution of sendmail during tests
         $emailStub = $this->createStub(\CodeIgniter\Email\Email::class);
         $emailStub->method('send')->willReturn(true);

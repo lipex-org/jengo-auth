@@ -185,5 +185,3 @@ if (!function_exists('auth_request_input')) {
         return function_exists('data_get') ? data_get($all, $key, $default) : ($all[$key] ?? $default);
     }
 }
-
-

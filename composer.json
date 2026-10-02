@@ -28,10 +28,7 @@
     "autoload": {
         "psr-4": {
             "Jengo\\Auth\\": "src/"
-        },
-        "files": [
-            "src/Support/helpers.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {

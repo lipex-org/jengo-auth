@@ -20,8 +20,6 @@ class HelpersTest extends TestCase
 
     public function testCanHelperDelegatesToAuth(): void
     {
-        $this->assertFalse(can('articles.view'));
-
         $suffix = bin2hex(random_bytes(4));
         $userModel = new UserModel();
         $user = new User(['username' => 'helper_user_' . $suffix, 'active' => 1]);
@@ -29,6 +27,9 @@ class HelpersTest extends TestCase
         $user->id = (int) $id;
 
         auth()->login($user);
+
+        $this->assertFalse(can('articles.view'));
+
         auth()->permissions()->create('articles.view');
         auth()->user($user)->grant()->permission('articles.view');
 
@@ -38,8 +39,6 @@ class HelpersTest extends TestCase
 
     public function testCanAnyHelper(): void
     {
-        $this->assertFalse(can_any(['perm1', 'perm2']));
-
         $suffix = bin2hex(random_bytes(4));
         $userModel = new UserModel();
         $user = new User(['username' => 'any_user_' . $suffix, 'active' => 1]);
@@ -47,6 +46,9 @@ class HelpersTest extends TestCase
         $user->id = (int) $id;
 
         auth()->login($user);
+
+        $this->assertFalse(can_any(['perm1', 'perm2']));
+
         auth()->permissions()->create('perm.read');
         auth()->permissions()->create('perm.write');
         auth()->permissions()->create('perm.delete');
@@ -61,8 +63,6 @@ class HelpersTest extends TestCase
 
     public function testCanAllHelper(): void
     {
-        $this->assertFalse(can_all(['perm1', 'perm2']));
-
         $suffix = bin2hex(random_bytes(4));
         $userModel = new UserModel();
         $user = new User(['username' => 'all_user_' . $suffix, 'active' => 1]);
@@ -70,6 +70,9 @@ class HelpersTest extends TestCase
         $user->id = (int) $id;
 
         auth()->login($user);
+
+        $this->assertFalse(can_all(['perm1', 'perm2']));
+
         auth()->permissions()->create('task.create');
         auth()->permissions()->create('task.assign');
         auth()->permissions()->create('task.delete');

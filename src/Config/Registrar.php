@@ -38,6 +38,13 @@ class Registrar
                 'bypass' => true,
             ],
             'user' => [
+                'current'  => static function () {
+                    try {
+                        return function_exists('auth') ? auth()->user() : (function_exists('service') ? service('auth')->user() : null);
+                    } catch (\Throwable) {
+                        return null;
+                    }
+                },
                 'resolver' => static function ($user) {
                     if (is_object($user) && method_exists($user, 'vimaGetId')) {
                         return $user->vimaGetId();
