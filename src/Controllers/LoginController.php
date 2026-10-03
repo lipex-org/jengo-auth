@@ -131,6 +131,9 @@ class LoginController extends BaseAuthController
             statusCode: 200,
             message: 'Successfully authenticated.',
             redirectTo: config('Auth')->redirects['login'] ?? '/',
+            data: [
+                'use_inertia_location' => true,
+            ],
             user: $user
         );
 
@@ -154,7 +157,11 @@ class LoginController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Logged out successfully.',
-            redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login')
+            redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login'),
+            data: [
+                'user' => $user,
+                'use_inertia_location' => true
+            ]
         );
 
         return $this->renderResponse('logout.success', $data);

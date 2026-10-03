@@ -130,6 +130,9 @@ class ActionController extends BaseAuthController
             statusCode: 200,
             message: 'Authentication completed successfully.',
             redirectTo: config('Auth')->redirects['action'] ?? config('Auth')->redirects['login'] ?? '/',
+            data: [
+                'use_inertia_location' => true,
+            ],
             user: $user
         );
 

@@ -123,6 +123,9 @@ class RegisterController extends BaseAuthController
             statusCode: 201,
             message: 'Registration successful.',
             redirectTo: config('Auth')->redirects['register'] ?? '/',
+            data: [
+                'use_inertia_location' => true,
+            ],
             user: $user
         );
 

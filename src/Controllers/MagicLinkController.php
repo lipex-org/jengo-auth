@@ -123,6 +123,9 @@ class MagicLinkController extends BaseAuthController
             statusCode: 200,
             message: 'Successfully logged in via magic link.',
             redirectTo: config('Auth')->redirects['magic-link'] ?? config('Auth')->redirects['login'] ?? '/',
+            data: [
+                'use_inertia_location' => true,
+            ],
             user: $user
         );
 

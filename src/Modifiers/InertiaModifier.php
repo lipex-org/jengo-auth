@@ -15,7 +15,7 @@ class InertiaModifier implements ResponseModifierInterface
     public function modify(string $action, AuthResponseData $data, RequestInterface $request): ResponseInterface
     {
         // 1. Errors
-        if (! $data->isSuccess()) {
+        if (!$data->isSuccess()) {
             if ($data->statusCode === 404) {
                 return Services::response()->setStatusCode(404)->setBody('Page Not Found');
             }
@@ -37,7 +37,7 @@ class InertiaModifier implements ResponseModifierInterface
         // 2. Views / GET actions
         $component = $this->resolveComponentForAction($action, $data->view);
         if ($component !== null) {
-            if (! class_exists(Inertia::class)) {
+            if (!class_exists(Inertia::class)) {
                 throw new \RuntimeException(
                     'The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia'
                 );
@@ -54,6 +54,12 @@ class InertiaModifier implements ResponseModifierInterface
             session()->setFlashdata('message', $data->message);
         }
 
+        $useInertiaLocation = $data->data['use_inertia_location'] ?? false;
+
+        if ($useInertiaLocation) {
+            return Inertia::location($redirectUrl);
+        }
+
         return redirect()->to($redirectUrl);
     }
 
@@ -67,21 +73,21 @@ class InertiaModifier implements ResponseModifierInterface
         $views = $config->views ?? [];
 
         $configuredView = match ($action) {
-            'login.view'          => $views['login'] ?? null,
-            'register.view'       => $views['register'] ?? null,
-            'forgot_password.view'=> $views['forgotPassword'] ?? null,
+            'login.view' => $views['login'] ?? null,
+            'register.view' => $views['register'] ?? null,
+            'forgot_password.view' => $views['forgotPassword'] ?? null,
             'reset_password.view' => $views['resetPassword'] ?? null,
-            'magic_link.view'     => $views['magicLink'] ?? null,
-            'magic_link.sent'     => $views['magicLinkSent'] ?? null,
-            'action.show'         => $views['action_mfa'] ?? null,
+            'magic_link.view' => $views['magicLink'] ?? null,
+            'magic_link.sent' => $views['magicLinkSent'] ?? null,
+            'action.show' => $views['action_mfa'] ?? null,
             'sudo.view', 'auth.sudo' => $views['sudo'] ?? null,
             'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? null,
-            default               => null,
+            default => null,
         };
 
         if ($configuredView !== null) {
             // If configured with a custom Inertia component path (e.g. 'auth/custom-login' or 'pages/login')
-            if (! str_starts_with($configuredView, 'Jengo\\Auth\\Views\\')) {
+            if (!str_starts_with($configuredView, 'Jengo\\Auth\\Views\\')) {
                 return $configuredView;
             }
 
@@ -91,16 +97,16 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         return match ($action) {
-            'login.view'                          => 'auth/login',
-            'register.view'                       => 'auth/register',
-            'forgot_password.view'                => 'auth/forgot_password',
-            'reset_password.view'                 => 'auth/reset_password',
-            'magic_link.view'                     => 'auth/magic_link',
-            'magic_link.sent'                     => 'auth/magic_link_sent',
-            'action.show'                         => 'auth/mfa_challenge',
-            'sudo.view', 'auth.sudo'              => 'auth/sudo_challenge',
+            'login.view' => 'auth/login',
+            'register.view' => 'auth/register',
+            'forgot_password.view' => 'auth/forgot_password',
+            'reset_password.view' => 'auth/reset_password',
+            'magic_link.view' => 'auth/magic_link',
+            'magic_link.sent' => 'auth/magic_link_sent',
+            'action.show' => 'auth/mfa_challenge',
+            'sudo.view', 'auth.sudo' => 'auth/sudo_challenge',
             'two_factor.view', 'two_factor.index' => 'auth/two_factor_settings',
-            default                               => (str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index'))
+            default => (str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index'))
                 ? 'auth/' . strtolower(str_replace(['.', '-'], '_', $action))
                 : null,
         };

@@ -83,6 +83,9 @@ class ResetPasswordController extends BaseAuthController
             statusCode: 200,
             message: 'Password reset successfully. You can now log in.',
             redirectTo: config('Auth')->redirects['login'] ?? auth_url('login'),
+            data: [
+                'use_inertia_location' => true,
+            ],
             user: $user
         );
 
