@@ -44,6 +44,7 @@ class InertiaModifier implements ResponseModifierInterface
             }
 
             $props = $data->toArray();
+            unset($props['errors'], $props['flash']);
 
             return Inertia::render($component, $props);
         }
