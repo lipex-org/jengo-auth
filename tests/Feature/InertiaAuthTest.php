@@ -90,4 +90,47 @@ class InertiaAuthTest extends TestCase
         $this->assertSame(302, $response->getStatusCode());
         $this->assertSame($errors, Services::session()->getFlashdata('errors'));
     }
+
+    public function testInertiaMutationSuccessRedirectsInsteadOfRenderingComponent(): void
+    {
+        $modifier = new InertiaModifier();
+        $request = Services::request();
+
+        // 1. Logout success
+        $logoutData = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'logout.success',
+            status: 'success',
+            statusCode: 200,
+            message: 'Logged out successfully.',
+            redirectTo: '/login'
+        );
+        $logoutResponse = $modifier->modify('logout.success', $logoutData, $request);
+        $this->assertInstanceOf(RedirectResponse::class, $logoutResponse);
+        $this->assertStringEndsWith('/login', $logoutResponse->getHeaderLine('Location'));
+
+        // 2. Register success
+        $registerData = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'register.success',
+            status: 'success',
+            statusCode: 201,
+            message: 'Registration successful.',
+            redirectTo: '/'
+        );
+        $registerResponse = $modifier->modify('register.success', $registerData, $request);
+        $this->assertInstanceOf(RedirectResponse::class, $registerResponse);
+        $this->assertSame(302, $registerResponse->getStatusCode());
+
+        // 3. Login success
+        $loginData = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'login.success',
+            status: 'success',
+            statusCode: 200,
+            message: 'Successfully authenticated.',
+            redirectTo: '/'
+        );
+        $loginResponse = $modifier->modify('login.success', $loginData, $request);
+        $this->assertInstanceOf(RedirectResponse::class, $loginResponse);
+        $this->assertSame(302, $loginResponse->getStatusCode());
+    }
 }
+

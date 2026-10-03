@@ -69,7 +69,7 @@ class AuthFilter implements FilterInterface
             if ($auth->check()) {
                 /** @var Guest $instance */
                 $instance = $guestAttr->newInstance();
-                $home = $instance->redirectTo ?? config('Auth')->redirects['home'] ?? '/';
+                $home = $instance->redirectTo ?? config('Auth')->redirects['login'] ?? '/';
                 return redirect()->to($home);
             }
             return null;

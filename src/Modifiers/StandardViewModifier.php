@@ -71,7 +71,7 @@ class StandardViewModifier implements ResponseModifierInterface
         }
 
         // 3. Mutation Success Actions -> Redirect
-        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['home'] ?? '/';
+        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['login'] ?? '/';
 
         $redirect = redirect()->to($redirectUrl);
         if ($data->message) {

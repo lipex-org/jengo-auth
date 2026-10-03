@@ -165,9 +165,13 @@ class Auth extends BaseConfig
      * Redirect routes.
      */
     public array $redirects = [
-        "login" => "/login",
-        "home" => "/",
+        "login" => "/",
         "logout" => "/login",
+        "register" => "/",
+        "password-reset" => "/login",
+        "magic-link" => "/",
+        "sudo" => "/",
+        "action" => "/",
         "denied" => "/403",
     ];
 

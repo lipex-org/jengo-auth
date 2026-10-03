@@ -35,30 +35,29 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         // 2. Views / GET actions
-        $hasResolvedComponent = $this->resolveComponentForAction($action, $data->view) !== null;
-        if ($data->view !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index') || $hasResolvedComponent) {
+        $component = $this->resolveComponentForAction($action, $data->view);
+        if ($component !== null) {
             if (! class_exists(Inertia::class)) {
                 throw new \RuntimeException(
                     'The jengo/inertia package is required to use InertiaModifier. Run: composer require jengo/inertia'
                 );
             }
 
-            $component = $this->resolveComponentForAction($action, $data->view);
             $props = $data->toArray();
 
             return Inertia::render($component, $props);
         }
 
         // 3. Success Redirect
-        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['home'] ?? '/';
+        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['login'] ?? '/';
         if ($data->message) {
             session()->setFlashdata('message', $data->message);
         }
 
-        return redirect()->to($redirectUrl)->with('message', $data->message);
+        return redirect()->to($redirectUrl);
     }
 
-    protected function resolveComponentForAction(string $action, ?string $customView = null): string
+    protected function resolveComponentForAction(string $action, ?string $customView = null): ?string
     {
         if ($customView !== null) {
             return $customView;
@@ -101,7 +100,9 @@ class InertiaModifier implements ResponseModifierInterface
             'action.show'                         => 'auth/mfa_challenge',
             'sudo.view', 'auth.sudo'              => 'auth/sudo_challenge',
             'two_factor.view', 'two_factor.index' => 'auth/two_factor_settings',
-            default                               => 'auth/' . strtolower(str_replace(['.', '-'], '_', $action)),
+            default                               => (str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index'))
+                ? 'auth/' . strtolower(str_replace(['.', '-'], '_', $action))
+                : null,
         };
     }
 
