@@ -156,7 +156,7 @@ class PasskeyDriver implements ChallengeableFactorInterface, VerifiableFactorInt
             $existingCreds = array_column($existing, 'credential_id');
         }
 
-        $rpName = (string) (config('App')->appName ?? config('Auth')->emailConfig['fromName'] ?? 'Jengo App');
+        $rpName = (string) (config('App')->appName ?? config('Email')->fromName ?? 'Jengo App');
         $rpId = $this->resolveRpId();
 
         $creationOptions = WebAuthnEngine::generateCreationOptions(

@@ -8,6 +8,7 @@ use CodeIgniter\Router\RouteCollection;
 use Config\Services;
 use DateTimeInterface;
 use InvalidArgumentException;
+use RuntimeException;
 use Jengo\Auth\Authentication\Authenticators\SessionGuard;
 use Jengo\Auth\Authentication\Authenticators\TokenGuard;
 use Jengo\Auth\Authentication\Authenticators\UniversalGuard;
@@ -21,13 +22,11 @@ use Jengo\Auth\Entities\User;
 use Jengo\Auth\Models\UserIdentityModel;
 use Jengo\Auth\Models\UserModel;
 use Jengo\Auth\Models\UserTokenModel;
-use Jengo\Auth\Modifiers\StandardViewModifier;
 use Vima\Core\Permission\Fluent\PermissionResource;
 use Vima\Core\Permission\Services\PermissionService;
 use Vima\Core\Policy\Services\PolicyRegistry;
 use Vima\Core\Role\Fluent\RoleResource;
 use Vima\Core\Role\Services\RoleService;
-use Vima\Core\User\Fluent\UserResource;
 use Vima\Core\Vima;
 use Vima\Core\VimaManager;
 
@@ -87,7 +86,19 @@ class AuthManager
      */
     public function getDefaultDriver(): string
     {
-        return $this->defaultGuard ?? config('Auth')->defaultGuard ?? 'universal';
+        $config = config('Auth');
+        $default = $this->defaultGuard ?? $config->defaultGuard ?? null;
+
+        if ($default !== null && $default !== '') {
+            return $default;
+        }
+
+        $guards = (array) ($config->guards ?? []);
+        if (! empty($guards)) {
+            return (string) array_key_first($guards);
+        }
+
+        throw new RuntimeException("No default authentication guard is configured in the Auth configuration.");
     }
 
     /**
@@ -101,57 +112,79 @@ class AuthManager
     }
 
     /**
-     * Switch or resolve a specific guard driver.
+     * Switch or resolve a specific guard driver based strictly on Auth configuration and registered extensions.
      */
     public function guard(?string $name = null): GuardInterface
     {
+        $configGuards = (array) (config('Auth')->guards ?? []);
+
+        // 1. Check custom instances and extensions if explicit name is provided
+        if ($name !== null) {
+            if (isset($this->guards[$name])) {
+                return $this->guards[$name];
+            }
+
+            if (isset($this->customCreators[$name])) {
+                return $this->guards[$name] = ($this->customCreators[$name])($this);
+            }
+        }
+
+        // 2. Resolve default name if none given
         $name = $name ?? $this->getDefaultDriver();
 
-        // Standardize common aliases
-        $normalizedName = match (strtolower($name)) {
-            'web'            => 'session',
-            'api', 'bearer'  => 'token',
-            default          => $name,
-        };
-
-        if (isset($this->guards[$normalizedName])) {
-            return $this->guards[$normalizedName];
+        if (isset($this->guards[$name])) {
+            return $this->guards[$name];
         }
 
-        // 1. Check custom creators (auth()->extend('jwt', fn() => ...))
-        if (isset($this->customCreators[$normalizedName])) {
-            return $this->guards[$normalizedName] = ($this->customCreators[$normalizedName])($this);
+        if (isset($this->customCreators[$name])) {
+            return $this->guards[$name] = ($this->customCreators[$name])($this);
         }
 
-        // 2. Built-in Session Guard
-        if ($normalizedName === 'session') {
-            return $this->guards['session'] = new SessionGuard($this->userModel, $this->identityModel, $this->hasher);
+        // 3. Verify guards exist in configuration
+        if (empty($configGuards)) {
+            throw new RuntimeException("No authentication guards are defined in the Auth configuration.");
         }
 
-        // 3. Built-in Token Guard
-        if ($normalizedName === 'token') {
-            return $this->guards['token'] = new TokenGuard($this->userModel);
+        if (! isset($configGuards[$name])) {
+            throw new InvalidArgumentException("Authentication guard [{$name}] is not defined in the Auth configuration.");
         }
 
-        // 4. Built-in Universal Guard
-        if ($normalizedName === 'universal') {
-            $tokenGuard = $this->guard('token');
-            $sessionGuard = $this->guard('session');
+        // 4. Resolve from config definition
+        $guardDefinition = $configGuards[$name];
 
-            return $this->guards['universal'] = new UniversalGuard(
-                $tokenGuard instanceof TokenGuard ? $tokenGuard : null,
-                $sessionGuard instanceof SessionGuard ? $sessionGuard : null
-            );
+        if ($guardDefinition instanceof GuardInterface) {
+            return $this->guards[$name] = $guardDefinition;
         }
 
-        // 5. Config-registered custom guard class mapping
-        $configGuards = (array) (config('Auth')->guards ?? []);
-        if (isset($configGuards[$normalizedName]) && class_exists($configGuards[$normalizedName])) {
-            $class = $configGuards[$normalizedName];
-            return $this->guards[$normalizedName] = new $class();
+        if (is_callable($guardDefinition)) {
+            $instance = $guardDefinition($this);
+            if (! ($instance instanceof GuardInterface)) {
+                throw new InvalidArgumentException("Guard creator for [{$name}] must return an instance of " . GuardInterface::class);
+            }
+            return $this->guards[$name] = $instance;
         }
 
-        throw new InvalidArgumentException("Authentication guard [{$name}] is not defined.");
+        if (is_string($guardDefinition)) {
+            if (! class_exists($guardDefinition)) {
+                throw new InvalidArgumentException("Guard class [{$guardDefinition}] defined for guard [{$name}] does not exist.");
+            }
+
+            if ($guardDefinition === SessionGuard::class || is_subclass_of($guardDefinition, SessionGuard::class)) {
+                $instance = new $guardDefinition($this->userModel, $this->identityModel, $this->hasher);
+            } elseif ($guardDefinition === TokenGuard::class || is_subclass_of($guardDefinition, TokenGuard::class)) {
+                $instance = new $guardDefinition($this->userModel);
+            } else {
+                $instance = new $guardDefinition();
+            }
+
+            if (! ($instance instanceof GuardInterface)) {
+                throw new InvalidArgumentException("Guard class [{$guardDefinition}] must implement " . GuardInterface::class);
+            }
+
+            return $this->guards[$name] = $instance;
+        }
+
+        throw new InvalidArgumentException("Invalid guard definition for [{$name}] in Auth configuration.");
     }
 
     /**
@@ -372,7 +405,7 @@ class AuthManager
             return $tokenGuard->createToken($user, $name, $abilities, $expiresAt);
         }
 
-        throw new \RuntimeException("Current token guard does not support personal access token generation.");
+        throw new RuntimeException("Current token guard does not support personal access token generation.");
     }
 
     /**

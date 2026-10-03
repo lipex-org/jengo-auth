@@ -79,7 +79,7 @@ class TotpDriver implements ChallengeableFactorInterface, VerifiableFactorInterf
     public function startEnrollment(User $user, array $options = []): array
     {
         $secret = TotpEngine::generateSecret();
-        $appName = (string) (config('App')->appName ?? config('Auth')->emailConfig['fromName'] ?? 'Jengo App');
+        $appName = (string) (config('App')->appName ?? config('Email')->fromName ?? 'Jengo App');
         $accountName = (string) ($user->email ?? $user->username ?? 'user');
 
         $otpAuthUri = TotpEngine::getOtpAuthUri($secret, $accountName, $appName);

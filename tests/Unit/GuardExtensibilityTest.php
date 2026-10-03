@@ -65,16 +65,21 @@ class MockCustomGuard implements GuardInterface
 
 class GuardExtensibilityTest extends TestCase
 {
-    public function testResolvesBuiltInGuardsAndAliases(): void
+    public function testResolvesStrictlyDefinedGuards(): void
     {
         $auth = auth();
 
         $this->assertInstanceOf(UniversalGuard::class, $auth->guard('universal'));
         $this->assertInstanceOf(SessionGuard::class, $auth->guard('session'));
-        $this->assertInstanceOf(SessionGuard::class, $auth->guard('web'));
         $this->assertInstanceOf(TokenGuard::class, $auth->guard('token'));
-        $this->assertInstanceOf(TokenGuard::class, $auth->guard('api'));
-        $this->assertInstanceOf(TokenGuard::class, $auth->guard('bearer'));
+    }
+
+    public function testThrowsExceptionOnUndefinedOrAliasGuard(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Authentication guard [api] is not defined in the Auth configuration.');
+
+        auth()->guard('api');
     }
 
     public function testExtendingWithCustomGuardClosure(): void
@@ -129,5 +134,39 @@ class GuardExtensibilityTest extends TestCase
         $this->assertSame('custom_default', $auth->getDefaultDriver());
         $this->assertTrue($auth->check());
         $this->assertSame('default_user', $auth->user()->username);
+    }
+
+    public function testConfigIsSourceOfTruthForGuards(): void
+    {
+        // Change config guards mapping completely
+        config('Auth')->guards = [
+            'default' => UniversalGuard::class,
+            'web'     => SessionGuard::class,
+            'api'     => TokenGuard::class,
+        ];
+        config('Auth')->defaultGuard = 'default';
+
+        $auth = new \Jengo\Auth\Support\AuthManager();
+
+        $this->assertInstanceOf(UniversalGuard::class, $auth->guard('default'));
+        $this->assertInstanceOf(SessionGuard::class, $auth->guard('web'));
+        $this->assertInstanceOf(TokenGuard::class, $auth->guard('api'));
+        $this->assertInstanceOf(UniversalGuard::class, $auth->guard()); // default
+
+        // 'universal' is no longer in config, so it must throw
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Authentication guard [universal] is not defined in the Auth configuration.');
+        $auth->guard('universal');
+    }
+
+    public function testThrowsExceptionWhenNoGuardsInConfig(): void
+    {
+        config('Auth')->guards = [];
+
+        $auth = new \Jengo\Auth\Support\AuthManager();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('No authentication guards are defined in the Auth configuration.');
+        $auth->guard('session');
     }
 }

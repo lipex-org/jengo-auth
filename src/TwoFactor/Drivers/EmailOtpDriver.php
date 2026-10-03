@@ -71,9 +71,9 @@ class EmailOtpDriver implements ChallengeableFactorInterface, VerifiableFactorIn
 
         $email = (string) ($user->email ?? $user->attributes['email'] ?? '');
         if ($email && $notifier) {
-            $emailConfig = config('Auth')->emailConfig ?? [];
-            $fromEmail = $emailConfig['fromEmail'] ?? 'noreply@example.com';
-            $fromName = $emailConfig['fromName'] ?? 'Jengo Auth';
+            $emailConfig = config('Email');
+            $fromEmail = !empty($emailConfig->fromEmail) ? $emailConfig->fromEmail : 'noreply@example.com';
+            $fromName = !empty($emailConfig->fromName) ? $emailConfig->fromName : 'Jengo Auth';
 
             $viewName = config('Auth')->emailViews['mfaCode'] ?? 'Jengo\Auth\Views\Email\mfa_code';
             $body = view($viewName, ['code' => $code, 'user' => $user]);

@@ -21,6 +21,11 @@ use Jengo\Auth\Authentication\Authenticators\{
     SessionGuard,
     TokenGuard,
 };
+use Jengo\Auth\TwoFactor\Drivers\EmailOtpDriver;
+use Jengo\Auth\TwoFactor\Drivers\PasskeyDriver;
+use Jengo\Auth\TwoFactor\Drivers\PasswordDriver;
+use Jengo\Auth\TwoFactor\Drivers\RecoveryCodeDriver;
+use Jengo\Auth\TwoFactor\Drivers\TotpDriver;
 
 class Auth extends BaseConfig
 {
@@ -84,11 +89,11 @@ class Auth extends BaseConfig
     public array $twoFactor = [
         "enabled" => true,
         "drivers" => [
-            "passkey"       => \Jengo\Auth\TwoFactor\Drivers\PasskeyDriver::class,
-            "totp"          => \Jengo\Auth\TwoFactor\Drivers\TotpDriver::class,
-            "email_otp"     => \Jengo\Auth\TwoFactor\Drivers\EmailOtpDriver::class,
-            "recovery_code" => \Jengo\Auth\TwoFactor\Drivers\RecoveryCodeDriver::class,
-            "password"      => \Jengo\Auth\TwoFactor\Drivers\PasswordDriver::class,
+            "passkey"       => PasskeyDriver::class,
+            "totp"          => TotpDriver::class,
+            "email_otp"     => EmailOtpDriver::class,
+            "recovery_code" => RecoveryCodeDriver::class,
+            "password"      => PasswordDriver::class,
         ],
         "default" => "passkey",
     ];
@@ -125,14 +130,6 @@ class Auth extends BaseConfig
         "passwordReset" => "Jengo\Auth\Views\Email\password_reset",
         "mfaCode" => "Jengo\Auth\Views\Email\mfa_code",
         "activation" => "Jengo\Auth\Views\Email\activation",
-    ];
-
-    /**
-     * Email sender configuration.
-     */
-    public array $emailConfig = [
-        "fromEmail" => "noreply@example.com",
-        "fromName" => "Jengo Auth",
     ];
 
     /**
@@ -191,6 +188,8 @@ class Auth extends BaseConfig
         "magic-link" => "magic-link",
         "action" => "auth/action",
         "tokens" => "api/tokens",
+        "sudo" => "auth/sudo",
+        "two-factor" => "user/two-factor",
     ];
 
     /**
@@ -204,6 +203,8 @@ class Auth extends BaseConfig
         "magic-link" => MagicLinkController::class,
         "action" => ActionController::class,
         "tokens" => TokenController::class,
+        "sudo" => \Jengo\Auth\Controllers\SudoController::class,
+        "two-factor" => \Jengo\Auth\Controllers\TwoFactorSettingsController::class,
     ];
 
     /**

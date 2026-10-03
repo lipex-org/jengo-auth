@@ -163,4 +163,33 @@ class RouteRegistrarTest extends TestCase
         $this->assertArrayHasKey('logout', $registeredGet);
         $this->assertArrayNotHasKey('logout', $registeredPost);
     }
+
+    public function testCustomSudoAndTwoFactorRoutePaths(): void
+    {
+        $routes = Services::routes();
+        $routes->resetRoutes();
+
+        auth()->routes($routes, [
+            'paths' => [
+                'sudo'       => 'security/step-up',
+                'two-factor' => 'account/mfa-settings',
+            ],
+        ]);
+
+        $registeredGet = $routes->getRoutes('GET');
+        $registeredPost = $routes->getRoutes('POST');
+
+        $this->assertArrayHasKey('security/step-up', $registeredGet);
+        $this->assertArrayHasKey('security/step-up/challenge', $registeredPost);
+        $this->assertArrayHasKey('security/step-up/verify', $registeredPost);
+        $this->assertArrayHasKey('security/step-up/exit', $registeredPost);
+
+        $this->assertArrayHasKey('account/mfa-settings', $registeredGet);
+        $this->assertArrayHasKey('account/mfa-settings/enroll/start', $registeredPost);
+        $this->assertArrayHasKey('account/mfa-settings/enroll/confirm', $registeredPost);
+        $this->assertArrayHasKey('account/mfa-settings/unenroll', $registeredPost);
+
+        $this->assertSame('/security/step-up', $routes->reverseRoute('auth.sudo'));
+        $this->assertSame('/account/mfa-settings', $routes->reverseRoute('two-factor.index'));
+    }
 }

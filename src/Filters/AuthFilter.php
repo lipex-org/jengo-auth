@@ -33,12 +33,15 @@ class AuthFilter implements FilterInterface
             }
         }
 
-        // Standard filter route check: default to standard auth guard if no arguments specified
+        // Standard filter route check: only check guard if explicitly specified in arguments
         $guardName = $arguments[0] ?? null;
-        $guard = $guardName ? $auth->guard($guardName) : $auth->guard();
 
-        if (! $guard->check()) {
-            return $this->unauthorizedResponse($request);
+        if ($guardName) {
+            $guard = $auth->guard($guardName);
+
+            if (! $guard->check()) {
+                return $this->unauthorizedResponse($request);
+            }
         }
 
         return null;

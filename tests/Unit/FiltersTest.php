@@ -68,6 +68,19 @@ class FiltersTest extends TestCase
         $this->assertSame($dummyResponse, $afterResponse);
     }
 
+    public function testAuthFilterWithoutArgumentsAllowsUnannotatedRoute(): void
+    {
+        $filter = new AuthFilter();
+
+        // When used globally or without guard arguments, unannotated routes proceed
+        $webRequest = $this->createRequest('http://localhost/public-page');
+        $response = $filter->before($webRequest, null);
+        $this->assertNull($response);
+
+        $emptyArgsResponse = $filter->before($webRequest, []);
+        $this->assertNull($emptyArgsResponse);
+    }
+
     public function testPermissionFilter(): void
     {
         $filter = new PermissionFilter();

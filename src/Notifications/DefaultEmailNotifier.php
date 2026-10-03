@@ -76,9 +76,9 @@ class DefaultEmailNotifier implements NotificationSenderInterface
             return false;
         }
 
-        $config = config('Auth');
-        $fromEmail = $config->emailConfig['fromEmail'] ?? 'noreply@example.com';
-        $fromName  = $config->emailConfig['fromName'] ?? 'Jengo Auth';
+        $emailConfig = config('Email');
+        $fromEmail = !empty($emailConfig->fromEmail) ? $emailConfig->fromEmail : 'noreply@example.com';
+        $fromName  = !empty($emailConfig->fromName) ? $emailConfig->fromName : 'Jengo Auth';
 
         try {
             $htmlBody = view($viewName, $data);
