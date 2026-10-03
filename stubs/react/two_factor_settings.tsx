@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 
 interface Factor {
   id: string;
@@ -12,14 +12,26 @@ interface Factor {
 interface TwoFactorSettingsProps {
   enrolled_factors?: Factor[];
   available_factors?: Factor[];
+  message?: string;
+  error?: string;
+  flash?: Record<string, string>;
   user?: any;
 }
 
 export default function TwoFactorSettings({
   enrolled_factors = [],
   available_factors = [],
+  message: initialMessage,
+  error: initialError,
   user,
 }: TwoFactorSettingsProps) {
+  const { props } = usePage<any>();
+  const flash = props.flash || {};
+  const pageErrors = props.errors || {};
+
+  const error = initialError || flash.error || pageErrors.error;
+  const message = initialMessage || flash.message || flash.success;
+
   const [totpModal, setTotpModal] = useState(false);
   const [totpData, setTotpData] = useState<{ secret: string; qr_data_uri?: string; qr_uri?: string } | null>(null);
   const [totpCode, setTotpCode] = useState('');
@@ -138,6 +150,18 @@ export default function TwoFactorSettings({
             <p className="text-sm text-slate-400">Configure Multi-Factor Authentication and hardware security keys.</p>
           </div>
         </div>
+
+        {message && (
+          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+            {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           {/* TOTP */}

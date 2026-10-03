@@ -1,8 +1,14 @@
 <script lang="ts">
-  import { useForm } from '@inertiajs/svelte';
+  import { useForm, page } from '@inertiajs/svelte';
 
   export let available_factors: any[] = [];
+  export let message: string = '';
   export let error: string = '';
+
+  $: flash = $page?.props?.flash || {};
+  $: pageErrors = $page?.props?.errors || {};
+  $: activeError = error || flash.error || pageErrors.error || pageErrors.credentials || pageErrors.factor;
+  $: activeMessage = message || flash.message || flash.success;
 
   let activeTab: 'password' | 'totp' | 'passkey' | 'recovery_code' = 'password';
 
@@ -81,9 +87,15 @@
       <p class="text-xs text-slate-400 mt-1">This is a protected area. Please verify your identity to enter Sudo mode.</p>
     </div>
 
-    {#if error}
+    {#if activeMessage}
+      <div class="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+        {activeMessage}
+      </div>
+    {/if}
+
+    {#if activeError}
       <div class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
-        {error}
+        {activeError}
       </div>
     {/if}
 

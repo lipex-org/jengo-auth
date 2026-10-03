@@ -1,9 +1,16 @@
 <script lang="ts">
-  import { inertia, router } from '@inertiajs/svelte';
+  import { inertia, router, page } from '@inertiajs/svelte';
 
   export let enrolled_factors: any[] = [];
   export let available_factors: any[] = [];
+  export let message: string = '';
+  export let error: string = '';
   export let user: any = null;
+
+  $: flash = $page?.props?.flash || {};
+  $: pageErrors = $page?.props?.errors || {};
+  $: activeError = error || flash.error || pageErrors.error;
+  $: activeMessage = message || flash.message || flash.success;
 
   let totpModal = false;
   let totpData: any = null;
@@ -117,6 +124,18 @@
         <p class="text-sm text-slate-400">Configure Multi-Factor Authentication and hardware security keys.</p>
       </div>
     </div>
+
+    {#if activeMessage}
+      <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+        {activeMessage}
+      </div>
+    {/if}
+
+    {#if activeError}
+      <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+        {activeError}
+      </div>
+    {/if}
 
     <div class="space-y-4">
       <!-- TOTP -->

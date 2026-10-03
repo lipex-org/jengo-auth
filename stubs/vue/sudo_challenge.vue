@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
 
 interface Factor {
   id: string;
@@ -12,8 +12,16 @@ interface Factor {
 
 const props = defineProps<{
   available_factors?: Factor[];
+  message?: string;
   error?: string;
 }>();
+
+const page = usePage<any>();
+const flash = computed(() => page.props.flash || {});
+const pageErrors = computed(() => page.props.errors || {});
+
+const error = computed(() => props.error || flash.value.error || pageErrors.value.error || pageErrors.value.credentials || pageErrors.value.factor);
+const message = computed(() => props.message || flash.value.message || flash.value.success);
 
 const activeTab = ref<'password' | 'totp' | 'passkey' | 'recovery_code'>('password');
 
@@ -91,6 +99,10 @@ const handlePasskeyAuth = async () => {
         </div>
         <h1 class="text-2xl font-bold text-white">Confirm Access</h1>
         <p class="text-xs text-slate-400 mt-1">This is a protected area. Please verify your identity to enter Sudo mode.</p>
+      </div>
+
+      <div v-if="message" class="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+        {{ message }}
       </div>
 
       <div v-if="error" class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">

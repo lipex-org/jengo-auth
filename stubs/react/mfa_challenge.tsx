@@ -1,11 +1,20 @@
 import React from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 
 interface MfaChallengeProps {
+  message?: string;
   error?: string;
+  flash?: Record<string, string>;
 }
 
-export default function MfaChallenge({ error }: MfaChallengeProps) {
+export default function MfaChallenge({ error: initialError, message: initialMessage }: MfaChallengeProps) {
+  const { props } = usePage<any>();
+  const flash = props.flash || {};
+  const pageErrors = props.errors || {};
+
+  const error = initialError || flash.error || pageErrors.error;
+  const message = initialMessage || flash.message || flash.success;
+
   const { data, setData, post, processing, errors } = useForm({
     code: '',
   });
@@ -27,6 +36,12 @@ export default function MfaChallenge({ error }: MfaChallengeProps) {
           <h1 className="text-2xl font-bold text-white">Two-Factor Authentication</h1>
           <p className="text-xs text-slate-400 mt-1">Enter the verification code sent to your email or authenticator app.</p>
         </div>
+
+        {message && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+            {message}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">

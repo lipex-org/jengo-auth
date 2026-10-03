@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
 
 interface Factor {
   id: string;
@@ -13,8 +13,17 @@ interface Factor {
 const props = defineProps<{
   enrolled_factors?: Factor[];
   available_factors?: Factor[];
+  message?: string;
+  error?: string;
   user?: any;
 }>();
+
+const page = usePage<any>();
+const flash = computed(() => page.props.flash || {});
+const pageErrors = computed(() => page.props.errors || {});
+
+const error = computed(() => props.error || flash.value.error || pageErrors.value.error);
+const message = computed(() => props.message || flash.value.message || flash.value.success);
 
 const totpModal = ref(false);
 const totpData = ref<{ secret: string; qr_data_uri?: string; qr_uri?: string } | null>(null);
@@ -128,6 +137,14 @@ const unenroll = async (factor: string) => {
           <h1 class="text-2xl font-bold text-white mt-1">Two-Factor Authentication & Sudo</h1>
           <p class="text-sm text-slate-400">Configure Multi-Factor Authentication and hardware security keys.</p>
         </div>
+      </div>
+
+      <div v-if="message" class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+        {{ message }}
+      </div>
+
+      <div v-if="error" class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+        {{ error }}
       </div>
 
       <div class="space-y-4">

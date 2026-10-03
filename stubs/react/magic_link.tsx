@@ -1,12 +1,20 @@
 import React from 'react';
-import { useForm, Link } from '@inertiajs/react';
+import { useForm, usePage, Link } from '@inertiajs/react';
 
 interface MagicLinkProps {
   message?: string;
   error?: string;
+  flash?: Record<string, string>;
 }
 
-export default function MagicLink({ message, error }: MagicLinkProps) {
+export default function MagicLink({ message: initialMessage, error: initialError }: MagicLinkProps) {
+  const { props } = usePage<any>();
+  const flash = props.flash || {};
+  const pageErrors = props.errors || {};
+
+  const error = initialError || flash.error || pageErrors.error;
+  const message = initialMessage || flash.message || flash.success;
+
   const { data, setData, post, processing, errors } = useForm({
     email: '',
   });

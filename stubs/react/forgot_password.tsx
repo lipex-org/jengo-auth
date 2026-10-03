@@ -1,13 +1,21 @@
 import React from 'react';
-import { useForm, Link } from '@inertiajs/react';
+import { useForm, usePage, Link } from '@inertiajs/react';
 
 interface ForgotPasswordProps {
   message?: string;
   error?: string;
+  flash?: Record<string, string>;
 }
 
-export default function ForgotPassword({ message, error }: ForgotPasswordProps) {
-  const { data, setData, post, processing, errors, wasSuccessful } = useForm({
+export default function ForgotPassword({ message: initialMessage, error: initialError }: ForgotPasswordProps) {
+  const { props } = usePage<any>();
+  const flash = props.flash || {};
+  const pageErrors = props.errors || {};
+
+  const error = initialError || flash.error || pageErrors.error;
+  const message = initialMessage || flash.message || flash.success;
+
+  const { data, setData, post, processing, errors } = useForm({
     email: '',
   });
 

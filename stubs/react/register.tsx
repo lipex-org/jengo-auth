@@ -1,7 +1,21 @@
 import React from 'react';
-import { useForm, Link } from '@inertiajs/react';
+import { useForm, usePage, Link } from '@inertiajs/react';
 
-export default function Register() {
+interface RegisterProps {
+  errors?: Record<string, string>;
+  message?: string;
+  error?: string;
+  flash?: Record<string, string>;
+}
+
+export default function Register({ error: initialError, message: initialMessage }: RegisterProps) {
+  const { props } = usePage<any>();
+  const flash = props.flash || {};
+  const pageErrors = props.errors || {};
+
+  const error = initialError || flash.error || pageErrors.error;
+  const message = initialMessage || flash.message || flash.success;
+
   const { data, setData, post, processing, errors } = useForm({
     username: '',
     email: '',
@@ -19,6 +33,18 @@ export default function Register() {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-white mb-2 text-center">Create Account</h1>
         <p className="text-xs text-slate-400 mb-6 text-center">Sign up to get started with your new account.</p>
+
+        {message && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+            {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

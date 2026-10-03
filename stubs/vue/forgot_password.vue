@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { useForm, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { useForm, usePage, Link } from '@inertiajs/vue3';
 
-defineProps<{
+const props = defineProps<{
   message?: string;
   error?: string;
 }>();
+
+const page = usePage<any>();
+const flash = computed(() => page.props.flash || {});
+const pageErrors = computed(() => page.props.errors || {});
+
+const error = computed(() => props.error || flash.value.error || pageErrors.value.error);
+const message = computed(() => props.message || flash.value.message || flash.value.success);
 
 const form = useForm({
   email: '',

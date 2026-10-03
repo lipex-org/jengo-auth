@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
 
-defineProps<{
+const props = defineProps<{
   error?: string;
+  message?: string;
 }>();
+
+const page = usePage<any>();
+const flash = computed(() => page.props.flash || {});
+const pageErrors = computed(() => page.props.errors || {});
+
+const error = computed(() => props.error || flash.value.error || pageErrors.value.error);
+const message = computed(() => props.message || flash.value.message || flash.value.success);
 
 const form = useForm({
   code: '',
@@ -25,6 +34,10 @@ const submit = () => {
         </div>
         <h1 class="text-2xl font-bold text-white">Two-Factor Authentication</h1>
         <p class="text-xs text-slate-400 mt-1">Enter the 6-digit verification code from your authenticator app.</p>
+      </div>
+
+      <div v-if="message" class="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+        {{ message }}
       </div>
 
       <div v-if="error" class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 
 interface Factor {
   id: string;
@@ -11,10 +11,19 @@ interface Factor {
 
 interface SudoChallengeProps {
   available_factors?: Factor[];
+  message?: string;
   error?: string;
+  flash?: Record<string, string>;
 }
 
-export default function SudoChallenge({ available_factors = [], error }: SudoChallengeProps) {
+export default function SudoChallenge({ available_factors = [], error: initialError, message: initialMessage }: SudoChallengeProps) {
+  const { props } = usePage<any>();
+  const flash = props.flash || {};
+  const pageErrors = props.errors || {};
+
+  const error = initialError || flash.error || pageErrors.error || pageErrors.credentials || pageErrors.factor;
+  const message = initialMessage || flash.message || flash.success;
+
   const [activeTab, setActiveTab] = useState<'password' | 'totp' | 'passkey' | 'recovery_code'>('password');
   const { data, setData, post, processing, errors } = useForm({
     factor: 'password',
@@ -93,6 +102,12 @@ export default function SudoChallenge({ available_factors = [], error }: SudoCha
           <h1 className="text-2xl font-bold text-white">Confirm Access</h1>
           <p className="text-xs text-slate-400 mt-1">This is a protected area. Please verify your identity to enter Sudo mode.</p>
         </div>
+
+        {message && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+            {message}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">

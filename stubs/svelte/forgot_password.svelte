@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { useForm, inertia } from '@inertiajs/svelte';
+  import { useForm, inertia, page } from '@inertiajs/svelte';
 
   export let message: string = '';
   export let error: string = '';
+
+  $: flash = $page?.props?.flash || {};
+  $: pageErrors = $page?.props?.errors || {};
+  $: activeError = error || flash.error || pageErrors.error;
+  $: activeMessage = message || flash.message || flash.success;
 
   const form = useForm({
     email: '',
@@ -18,15 +23,15 @@
     <h1 class="text-2xl font-bold text-white mb-2 text-center">Reset Password</h1>
     <p class="text-xs text-slate-400 mb-6 text-center">Enter your email and we'll send a password reset link.</p>
 
-    {#if message}
+    {#if activeMessage}
       <div class="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
-        {message}
+        {activeMessage}
       </div>
     {/if}
 
-    {#if error}
+    {#if activeError}
       <div class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
-        {error}
+        {activeError}
       </div>
     {/if}
 

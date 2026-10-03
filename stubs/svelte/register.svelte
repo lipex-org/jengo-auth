@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { useForm, inertia } from '@inertiajs/svelte';
+  import { useForm, inertia, page } from '@inertiajs/svelte';
+
+  export let error: string = '';
+  export let message: string = '';
+
+  $: flash = $page?.props?.flash || {};
+  $: pageErrors = $page?.props?.errors || {};
+  $: activeError = error || flash.error || pageErrors.error;
+  $: activeMessage = message || flash.message || flash.success;
 
   const form = useForm({
     username: '',
@@ -17,6 +25,18 @@
   <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
     <h1 class="text-2xl font-bold text-white mb-2 text-center">Create Account</h1>
     <p class="text-xs text-slate-400 mb-6 text-center">Sign up to get started with your new account.</p>
+
+    {#if activeMessage}
+      <div class="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+        {activeMessage}
+      </div>
+    {/if}
+
+    {#if activeError}
+      <div class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+        {activeError}
+      </div>
+    {/if}
 
     <form on:submit|preventDefault={submit} class="space-y-4">
       <div>
