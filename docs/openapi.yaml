@@ -688,7 +688,7 @@ components:
         redirectTo:
           type: string
           nullable: true
-          example: /dashboard
+          example: /
         user:
           $ref: '#/components/schemas/UserEntity'
 

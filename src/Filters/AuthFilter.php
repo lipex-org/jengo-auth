@@ -26,7 +26,8 @@ class AuthFilter implements FilterInterface
         $controllerName = $router->controllerName();
         $methodName = $router->methodName();
 
-        if ($controllerName && class_exists($controllerName)) {
+        // skip for closure routes (no controller class)
+        if (is_string($controllerName) && class_exists($controllerName)) {
             $attrResult = $this->checkControllerAttributes($controllerName, (string) $methodName, $request);
             if ($attrResult !== null) {
                 return $attrResult;
@@ -44,7 +45,7 @@ class AuthFilter implements FilterInterface
             }
         }
 
-        return null;
+        return;
     }
 
     public function checkControllerAttributes(string $controllerName, string $methodName, RequestInterface $request)
@@ -68,7 +69,8 @@ class AuthFilter implements FilterInterface
             if ($auth->check()) {
                 /** @var Guest $instance */
                 $instance = $guestAttr->newInstance();
-                return redirect()->to($instance->redirectTo ?? '/dashboard');
+                $home = $instance->redirectTo ?? config('Auth')->redirects['home'] ?? '/';
+                return redirect()->to($home);
             }
             return null;
         }

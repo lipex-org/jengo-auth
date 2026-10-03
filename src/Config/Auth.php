@@ -166,7 +166,7 @@ class Auth extends BaseConfig
      */
     public array $redirects = [
         "login" => "/login",
-        "home" => "/dashboard",
+        "home" => "/",
         "logout" => "/login",
         "denied" => "/403",
     ];

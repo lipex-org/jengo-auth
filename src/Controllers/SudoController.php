@@ -36,7 +36,7 @@ class SudoController extends BaseAuthController
 
         // If already in sudo mode, redirect to intended or home
         if ($sudo->check()) {
-            $intended = session()->get(SudoManager::SESSION_INTENDED) ?? config('Auth')->redirects['home'] ?? '/dashboard';
+            $intended = session()->get(SudoManager::SESSION_INTENDED) ?? config('Auth')->redirects['home'] ?? '/';
             session()->remove(SudoManager::SESSION_INTENDED);
 
             $data = new AuthResponseData(
@@ -165,7 +165,7 @@ class SudoController extends BaseAuthController
             return $this->renderResponse('sudo.verify', $data);
         }
 
-        $intended = session()->get(SudoManager::SESSION_INTENDED) ?? config('Auth')->redirects['home'] ?? '/dashboard';
+        $intended = session()->get(SudoManager::SESSION_INTENDED) ?? config('Auth')->redirects['home'] ?? '/';
         session()->remove(SudoManager::SESSION_INTENDED);
 
         $data = new AuthResponseData(
@@ -197,7 +197,7 @@ class SudoController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Sudo mode exited.',
-            redirectTo: config('Auth')->redirects['home'] ?? '/dashboard'
+            redirectTo: config('Auth')->redirects['home'] ?? '/'
         );
 
         return $this->renderResponse('sudo.exit', $data);

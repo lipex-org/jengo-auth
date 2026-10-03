@@ -17,8 +17,8 @@ $currentUser = $user ?? (auth()->check() ? auth()->user() : null);
         <!-- Top Navigation -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-5">
             <div>
-                <a href="<?= site_url('dashboard') ?>" class="text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 mb-1">
-                    &larr; Back to Dashboard
+                <a href="<?= site_url('/') ?>" class="text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 mb-1">
+                    &larr; Back to Home
                 </a>
                 <h1 class="text-2xl font-bold tracking-tight text-white">Security & Step-Up Auth (Sudo)</h1>
                 <p class="text-sm text-slate-400">Configure Multi-Factor Authentication and test GitHub-style Sudo verification.</p>

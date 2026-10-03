@@ -25,7 +25,7 @@ class RegisterController extends BaseAuthController
         }
 
         if (auth()->check()) {
-            return redirect()->to(config('Auth')->redirects['home'] ?? '/dashboard');
+            return redirect()->to(config('Auth')->redirects['home'] ?? '/');
         }
 
         $data = new AuthResponseData(
@@ -122,7 +122,7 @@ class RegisterController extends BaseAuthController
             status: 'success',
             statusCode: 201,
             message: 'Registration successful.',
-            redirectTo: config('Auth')->redirects['home'] ?? '/dashboard',
+            redirectTo: config('Auth')->redirects['home'] ?? '/',
             user: $user
         );
 

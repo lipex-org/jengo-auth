@@ -10,6 +10,6 @@ use Attribute;
 class Guest
 {
     public function __construct(
-        public ?string $redirectTo = '/dashboard'
+        public ?string $redirectTo = null
     ) {}
 }

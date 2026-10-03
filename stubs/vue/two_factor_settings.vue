@@ -124,7 +124,7 @@ const unenroll = async (factor: string) => {
     <div class="max-w-4xl mx-auto space-y-8">
       <div class="flex items-center justify-between border-b border-slate-800 pb-5">
         <div>
-          <Link href="/dashboard" class="text-sm font-semibold text-blue-400 hover:text-blue-300">&larr; Back to Dashboard</Link>
+          <Link href="/" class="text-sm font-semibold text-blue-400 hover:text-blue-300">&larr; Back to Home</Link>
           <h1 class="text-2xl font-bold text-white mt-1">Two-Factor Authentication & Sudo</h1>
           <p class="text-sm text-slate-400">Configure Multi-Factor Authentication and hardware security keys.</p>
         </div>

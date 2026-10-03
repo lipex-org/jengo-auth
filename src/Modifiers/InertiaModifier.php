@@ -50,7 +50,7 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         // 3. Success Redirect
-        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['home'] ?? '/dashboard';
+        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['home'] ?? '/';
         if ($data->message) {
             session()->setFlashdata('message', $data->message);
         }

@@ -23,7 +23,7 @@ class LoginController extends BaseAuthController
         }
 
         if (auth()->check()) {
-            return redirect()->to(config('Auth')->redirects['home'] ?? '/dashboard');
+            return redirect()->to(config('Auth')->redirects['home'] ?? '/');
         }
 
         $data = new AuthResponseData(
@@ -130,7 +130,7 @@ class LoginController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Successfully authenticated.',
-            redirectTo: config('Auth')->redirects['home'] ?? '/dashboard',
+            redirectTo: config('Auth')->redirects['home'] ?? '/',
             user: $user
         );
 

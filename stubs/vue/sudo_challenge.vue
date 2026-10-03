@@ -70,7 +70,7 @@ const handlePasskeyAuth = async () => {
     });
     const verifyData = await verifyRes.json();
     if (verifyData.status === 'success') {
-      window.location.href = verifyData.data?.intended_url || '/dashboard';
+      window.location.href = verifyData.data?.intended_url || '/';
     } else {
       alert(verifyData.message || 'Passkey verification failed.');
     }

@@ -31,8 +31,11 @@ class AttributesAndDTOsTest extends TestCase
         $this->assertSame(['superadmin', 'admin'], $roleAttr->roles);
         
 
-        $guestAttr = new Guest('/dashboard');
-        $this->assertSame('/dashboard', $guestAttr->redirectTo);
+        $guestAttrDefault = new Guest();
+        $this->assertNull($guestAttrDefault->redirectTo);
+
+        $guestAttr = new Guest('/');
+        $this->assertSame('/', $guestAttr->redirectTo);
     }
 
     public function testAuthResultAndTokenResultDTOs(): void
