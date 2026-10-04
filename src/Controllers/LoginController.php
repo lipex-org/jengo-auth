@@ -27,7 +27,7 @@ class LoginController extends BaseAuthController
         }
 
         if (auth()->check()) {
-            return redirect()->to(config('Auth')->redirects['login'] ?? '/');
+            return redirect()->to(auth_redirect_url('login', '/'));
         }
 
         $data = new AuthResponseData(
@@ -141,7 +141,7 @@ class LoginController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Successfully authenticated.',
-            redirectTo: config('Auth')->redirects['login'] ?? '/',
+            redirectTo: auth_redirect_url('login', '/'),
             data: [
                 'use_inertia_location' => true,
             ],
@@ -168,7 +168,7 @@ class LoginController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Logged out successfully.',
-            redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login'),
+            redirectTo: auth_redirect_url('logout', 'login'),
             data: [
                 'use_inertia_location' => true
             ]

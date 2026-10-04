@@ -122,6 +122,24 @@ if (!function_exists('auth_url')) {
     }
 }
 
+if (!function_exists('auth_redirect_url')) {
+    /**
+     * Resolves a redirect destination from config or input.
+     * If the target starts with '/' or 'http', it returns it directly; otherwise it resolves it as a named route.
+     */
+    function auth_redirect_url(string $key, string $default = '/'): string
+    {
+        $config = function_exists('config') ? config('Auth') : null;
+        $target = $config->redirects[$key] ?? $default;
+
+        if (str_starts_with($target, '/') || str_starts_with($target, 'http://') || str_starts_with($target, 'https://')) {
+            return $target;
+        }
+
+        return auth_url($target);
+    }
+}
+
 if (!function_exists('auth_request_all')) {
     /**
      * Safely extract all request input parameters (POST, GET, JSON) without throwing on non-JSON/malformed payloads.

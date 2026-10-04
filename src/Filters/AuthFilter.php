@@ -78,7 +78,7 @@ class AuthFilter implements FilterInterface
             if ($auth->check()) {
                 /** @var Guest $instance */
                 $instance = $guestAttr->newInstance();
-                $home = $instance->redirectTo ?? config('Auth')->redirects['login'] ?? '/';
+                $home = $instance->redirectTo ?? (function_exists('auth_redirect_url') ? auth_redirect_url('login', '/') : (config('Auth')->redirects['login'] ?? '/'));
                 return redirect()->to($home);
             }
             return null;

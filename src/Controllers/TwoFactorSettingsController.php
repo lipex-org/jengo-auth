@@ -27,7 +27,7 @@ class TwoFactorSettingsController extends BaseAuthController
                 status: 'error',
                 statusCode: 401,
                 message: 'Unauthenticated.',
-                redirectTo: config('Auth')->redirects['login'] ?? '/login'
+                redirectTo: auth_redirect_url('login', 'login')
             );
             return $this->renderResponse('two_factor.index', $data);
         }

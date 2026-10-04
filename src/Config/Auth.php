@@ -166,67 +166,17 @@ class Auth extends BaseConfig
     ];
 
     /**
-     * Audit logging toggle.
-     */
-    public bool $auditEnabled = true;
-
-    /**
-     * Inertia shared props key.
-     */
-    public string $inertiaAuthKey = "auth";
-
-    /**
-     * Redirect routes.
+     * Redirect destinations.
+     * Use URL paths (e.g. '/', '/dashboard') for landing pages or route names (e.g. 'login') for authentication targets.
      */
     public array $redirects = [
-        "login" => "/",
-        "logout" => "/login",
-        "register" => "/",
-        "password-reset" => "/login",
-        "magic-link" => "/",
-        "sudo" => "/",
-        "action" => "/",
-        "denied" => "/403",
+        "login"          => "/",
+        "register"       => "/",
+        "logout"         => "login",
+        "password_reset" => "login",
+        "magic_link"     => "/",
+        "sudo"           => "/",
+        "action"         => "/",
+        "denied"         => "login",
     ];
-
-    /**
-     * Route prefix and grouping (e.g. 'auth' or 'api/v1/auth').
-     */
-    public string $routePrefix = "";
-
-    /**
-     * Route endpoint paths customization.
-     */
-    public array $routePaths = [
-        "login" => "login",
-        "logout" => "logout",
-        "register" => "register",
-        "forgot-password" => "forgot-password",
-        "reset-password" => "reset-password",
-        "magic-link" => "magic-link",
-        "action" => "auth/action",
-        "tokens" => "api/tokens",
-        "sudo" => "auth/sudo",
-        "two-factor" => "user/two-factor",
-    ];
-
-    /**
-     * Controller class overrides for authentication routes.
-     */
-    public array $routeControllers = [
-        "login" => LoginController::class,
-        "register" => RegisterController::class,
-        "forgot-password" => ForgotPasswordController::class,
-        "reset-password" => ResetPasswordController::class,
-        "magic-link" => MagicLinkController::class,
-        "action" => ActionController::class,
-        "tokens" => TokenController::class,
-        "sudo" => \Jengo\Auth\Controllers\SudoController::class,
-        "two-factor" => \Jengo\Auth\Controllers\TwoFactorSettingsController::class,
-    ];
-
-    /**
-     * HTTP method for the logout endpoint ('post' or 'get'). Default is 'post'.
-     */
-    public string $logoutMethod = "post";
 }

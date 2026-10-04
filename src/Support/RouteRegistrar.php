@@ -47,7 +47,7 @@ class RouteRegistrar
         static::$lastOptions = $options;
 
         $config = config('Auth');
-        $prefix = (string) ($options['prefix'] ?? $options['group'] ?? $config->routePrefix ?? '');
+        $prefix = (string) ($options['prefix'] ?? $options['group'] ?? '');
         $prefix = trim($prefix, '/');
 
         if ($prefix !== '') {
@@ -154,9 +154,8 @@ class RouteRegistrar
             'sudo'            => 'auth/sudo',
             'two-factor'      => 'user/two-factor',
         ];
-        $configPaths = (array) ($config->routePaths ?? []);
         $optionPaths = (array) ($options['paths'] ?? []);
-        $paths = array_merge($defaultPaths, $configPaths, $optionPaths);
+        $paths = array_merge($defaultPaths, $optionPaths);
 
         $defaultControllers = [
             'login'           => LoginController::class,
@@ -169,12 +168,11 @@ class RouteRegistrar
             'sudo'            => \Jengo\Auth\Controllers\SudoController::class,
             'two-factor'      => \Jengo\Auth\Controllers\TwoFactorSettingsController::class,
         ];
-        $configControllers = (array) ($config->routeControllers ?? []);
         $optionControllers = (array) ($options['controllers'] ?? []);
-        $controllers = array_merge($defaultControllers, $configControllers, $optionControllers);
+        $controllers = array_merge($defaultControllers, $optionControllers);
 
         $filters = (array) ($options['filters'] ?? []);
-        $logoutMethod = strtolower((string) ($options['logoutMethod'] ?? ($options['allowGetLogout'] ?? false ? 'get' : null) ?? $config->logoutMethod ?? 'post'));
+        $logoutMethod = strtolower((string) ($options['logoutMethod'] ?? ($options['allowGetLogout'] ?? false ? 'get' : null) ?? 'post'));
 
         // 1. Login & Logout
         if (static::isFlowEnabled('login', $only, $except, (bool) ($config->allowLogin ?? true))) {

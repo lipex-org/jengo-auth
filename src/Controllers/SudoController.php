@@ -26,7 +26,7 @@ class SudoController extends BaseAuthController
                 status: 'error',
                 statusCode: 401,
                 message: 'Unauthenticated.',
-                redirectTo: config('Auth')->redirects['login'] ?? '/login'
+                redirectTo: auth_redirect_url('login', 'login')
             );
             return $this->renderResponse('sudo.view', $data);
         }
@@ -36,7 +36,7 @@ class SudoController extends BaseAuthController
 
         // If already in sudo mode, redirect to intended or sudo default redirect
         if ($sudo->check()) {
-            $intended = session()->get(SudoManager::SESSION_INTENDED) ?? config('Auth')->redirects['sudo'] ?? config('Auth')->redirects['login'] ?? '/';
+            $intended = session()->get(SudoManager::SESSION_INTENDED) ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
             session()->remove(SudoManager::SESSION_INTENDED);
 
             $data = new AuthResponseData(
@@ -165,7 +165,7 @@ class SudoController extends BaseAuthController
             return $this->renderResponse('sudo.verify', $data);
         }
 
-        $intended = session()->get(SudoManager::SESSION_INTENDED) ?? config('Auth')->redirects['sudo'] ?? config('Auth')->redirects['login'] ?? '/';
+        $intended = session()->get(SudoManager::SESSION_INTENDED) ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
         session()->remove(SudoManager::SESSION_INTENDED);
 
         $data = new AuthResponseData(
@@ -197,7 +197,7 @@ class SudoController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Sudo mode exited.',
-            redirectTo: config('Auth')->redirects['sudo'] ?? config('Auth')->redirects['login'] ?? '/'
+            redirectTo: auth_redirect_url('sudo', auth_redirect_url('login', '/'))
         );
 
         return $this->renderResponse('sudo.exit', $data);

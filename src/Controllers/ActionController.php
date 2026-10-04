@@ -20,8 +20,8 @@ class ActionController extends BaseAuthController
         $context = $this->getPendingContext();
         if (! $context) {
             $fallbackUrl = auth()->check()
-                ? (config('Auth')->redirects['login'] ?? '/')
-                : (config('Auth')->redirects['logout'] ?? auth_url('login'));
+                ? auth_redirect_url('login', '/')
+                : auth_redirect_url('logout', 'login');
 
             return redirect()->to($fallbackUrl);
         }
@@ -47,8 +47,8 @@ class ActionController extends BaseAuthController
         $context = $this->getPendingContext();
         if (! $context) {
             $fallbackUrl = auth()->check()
-                ? (config('Auth')->redirects['login'] ?? '/')
-                : (config('Auth')->redirects['logout'] ?? auth_url('login'));
+                ? auth_redirect_url('login', '/')
+                : auth_redirect_url('logout', 'login');
 
             return redirect()->to($fallbackUrl);
         }
@@ -82,8 +82,8 @@ class ActionController extends BaseAuthController
         $context = $this->getPendingContext();
         if (! $context) {
             $fallbackUrl = auth()->check()
-                ? (config('Auth')->redirects['login'] ?? '/')
-                : (config('Auth')->redirects['logout'] ?? auth_url('login'));
+                ? auth_redirect_url('login', '/')
+                : auth_redirect_url('logout', 'login');
 
             return redirect()->to($fallbackUrl);
         }
@@ -140,7 +140,7 @@ class ActionController extends BaseAuthController
             status: 'success',
             statusCode: 200,
             message: 'Authentication completed successfully.',
-            redirectTo: config('Auth')->redirects['action'] ?? config('Auth')->redirects['login'] ?? '/',
+            redirectTo: auth_redirect_url('action', auth_redirect_url('login', '/')),
             data: [
                 'use_inertia_location' => true,
             ],
@@ -162,7 +162,7 @@ class ActionController extends BaseAuthController
             status: 'info',
             statusCode: 200,
             message: 'Authentication action cancelled.',
-            redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login'),
+            redirectTo: auth_redirect_url('logout', 'login'),
             data: [
                 'use_inertia_location' => true,
             ]

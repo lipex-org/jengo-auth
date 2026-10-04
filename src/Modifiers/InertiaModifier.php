@@ -51,7 +51,7 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         // 3. Success Redirect
-        $redirectUrl = $data->redirectTo ?? config('Auth')->redirects['login'] ?? '/';
+        $redirectUrl = $data->redirectTo ?? (function_exists('auth_redirect_url') ? auth_redirect_url('login', '/') : (config('Auth')->redirects['login'] ?? '/'));
         if ($data->message) {
             session()->setFlashdata('message', $data->message);
         }

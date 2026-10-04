@@ -29,7 +29,7 @@ class RegisterController extends BaseAuthController
         }
 
         if (auth()->check()) {
-            return redirect()->to(config('Auth')->redirects['register'] ?? config('Auth')->redirects['login'] ?? '/');
+            return redirect()->to(auth_redirect_url('register', auth_redirect_url('login', '/')));
         }
 
         $data = new AuthResponseData(
@@ -133,7 +133,7 @@ class RegisterController extends BaseAuthController
             status: 'success',
             statusCode: 201,
             message: 'Registration successful.',
-            redirectTo: config('Auth')->redirects['register'] ?? '/',
+            redirectTo: auth_redirect_url('register', '/'),
             data: [
                 'use_inertia_location' => true,
             ],

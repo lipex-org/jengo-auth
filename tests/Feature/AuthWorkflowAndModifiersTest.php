@@ -637,5 +637,23 @@ class AuthWorkflowAndModifiersTest extends TestCase
         unset(config('Auth')->views['action_email_2fa']);
         config('Auth')->views['action_mfa'] = 'Jengo\Auth\Views\mfa_challenge';
     }
+
+    public function testAuthRedirectUrlResolvesNamedRoutesAndPaths(): void
+    {
+        // Path resolution (starting with /)
+        config('Auth')->redirects['login'] = '/dashboard';
+        $this->assertSame('/dashboard', auth_redirect_url('login'));
+
+        // Named route resolution
+        config('Auth')->redirects['logout'] = 'login';
+        $this->assertSame(auth_url('login'), auth_redirect_url('logout'));
+
+        // Fallback resolution
+        $this->assertSame(auth_url('login'), auth_redirect_url('non_existent', 'login'));
+
+        // Reset
+        config('Auth')->redirects['login'] = '/';
+        config('Auth')->redirects['logout'] = 'login';
+    }
 }
 
