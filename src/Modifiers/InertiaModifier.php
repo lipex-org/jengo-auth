@@ -36,7 +36,7 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         // 2. Views / GET actions
-        $component = $this->resolveComponentForAction($action, $data->view);
+        $component = $this->resolveComponentForAction($action, $data->view, $data->data);
         if ($component !== null) {
             if (!class_exists(Inertia::class)) {
                 throw new \RuntimeException(
@@ -65,7 +65,7 @@ class InertiaModifier implements ResponseModifierInterface
         return redirect()->to($redirectUrl);
     }
 
-    protected function resolveComponentForAction(string $action, ?string $customView = null): ?string
+    protected function resolveComponentForAction(string $action, ?string $customView = null, array $data = []): ?string
     {
         if ($customView !== null) {
             return $customView;
@@ -74,18 +74,32 @@ class InertiaModifier implements ResponseModifierInterface
         $config = config('Auth');
         $views = $config->views ?? [];
 
-        $configuredView = match ($action) {
-            'login.view' => $views['login'] ?? null,
-            'register.view' => $views['register'] ?? null,
-            'forgot_password.view' => $views['forgotPassword'] ?? null,
-            'reset_password.view' => $views['resetPassword'] ?? null,
-            'magic_link.view' => $views['magicLink'] ?? null,
-            'magic_link.sent' => $views['magicLinkSent'] ?? null,
-            'action.show' => $views['action_mfa'] ?? null,
-            'sudo.view', 'auth.sudo' => $views['sudo'] ?? null,
-            'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? null,
-            default => null,
-        };
+        $configuredView = null;
+        if ($action === 'action.show') {
+            $actionName = $data['action'] ?? null;
+            if ($actionName) {
+                if (! empty($views['action_' . $actionName])) {
+                    $configuredView = $views['action_' . $actionName];
+                } elseif (! empty($views['action_mfa_' . $actionName])) {
+                    $configuredView = $views['action_mfa_' . $actionName];
+                }
+            }
+            if ($configuredView === null) {
+                $configuredView = $views['action_mfa'] ?? null;
+            }
+        } else {
+            $configuredView = match ($action) {
+                'login.view' => $views['login'] ?? null,
+                'register.view' => $views['register'] ?? null,
+                'forgot_password.view' => $views['forgotPassword'] ?? null,
+                'reset_password.view' => $views['resetPassword'] ?? null,
+                'magic_link.view' => $views['magicLink'] ?? null,
+                'magic_link.sent' => $views['magicLinkSent'] ?? null,
+                'sudo.view', 'auth.sudo' => $views['sudo'] ?? null,
+                'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? null,
+                default => null,
+            };
+        }
 
         if ($configuredView !== null) {
             // If configured with a custom Inertia component path (e.g. 'auth/custom-login' or 'pages/login')

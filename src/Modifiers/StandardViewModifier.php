@@ -40,7 +40,7 @@ class StandardViewModifier implements ResponseModifierInterface
         }
 
         // 2. GET / View actions (explicit view set, matching resolved view, or action naming convention)
-        $viewName = $data->view ?? $this->resolveViewForAction($action);
+        $viewName = $data->view ?? $this->resolveViewForAction($action, $data->data);
 
         if ($viewName !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index')) {
             if ($viewName && function_exists('view')) {
@@ -89,10 +89,24 @@ class StandardViewModifier implements ResponseModifierInterface
         return $redirect;
     }
 
-    protected function resolveViewForAction(string $action): ?string
+    protected function resolveViewForAction(string $action, array $data = []): ?string
     {
         $config = config('Auth');
         $views = $config->views ?? [];
+
+        if ($action === 'action.show') {
+            $actionName = $data['action'] ?? null;
+            if ($actionName) {
+                // Check action-specific view keys: e.g. 'action_email_2fa', 'action_mfa_email_2fa'
+                if (! empty($views['action_' . $actionName])) {
+                    return $views['action_' . $actionName];
+                }
+                if (! empty($views['action_mfa_' . $actionName])) {
+                    return $views['action_mfa_' . $actionName];
+                }
+            }
+            return $views['action_mfa'] ?? 'Jengo\Auth\Views\mfa_challenge';
+        }
 
         return match ($action) {
             'login.view'          => $views['login'] ?? 'Jengo\Auth\Views\login',
@@ -101,7 +115,6 @@ class StandardViewModifier implements ResponseModifierInterface
             'reset_password.view' => $views['resetPassword'] ?? 'Jengo\Auth\Views\reset_password',
             'magic_link.view'     => $views['magicLink'] ?? 'Jengo\Auth\Views\magic_link',
             'magic_link.sent'     => $views['magicLinkSent'] ?? 'Jengo\Auth\Views\magic_link_sent',
-            'action.show'         => $views['action_mfa'] ?? 'Jengo\Auth\Views\mfa_challenge',
             'sudo.view', 'auth.sudo' => $views['sudo'] ?? 'Jengo\Auth\Views\sudo_challenge',
             'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? 'Jengo\\Auth\\Views\\two_factor_settings',
             default               => null,

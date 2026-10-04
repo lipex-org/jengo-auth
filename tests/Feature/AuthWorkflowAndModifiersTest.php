@@ -604,5 +604,38 @@ class AuthWorkflowAndModifiersTest extends TestCase
         $this->assertSame('https://example.com/logo.png', $array['brand']['logo']);
         $this->assertSame('Acumen Global Inc.', $array['brand']['companyName']);
     }
+
+    public function testActionSpecificViewResolutionInStandardViewModifier(): void
+    {
+        config('Auth')->views['action_email_2fa'] = 'CustomViews/Auth/MyEmail2fa';
+        config('Auth')->views['action_mfa'] = 'CustomViews/Auth/FallbackAction';
+
+        $modifier = new \Jengo\Auth\Modifiers\StandardViewModifier();
+        $request = Services::request();
+
+        // 1. Action with specific key configured
+        $data1 = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'action.show',
+            status: 'info',
+            statusCode: 200,
+            data: ['action' => 'email_2fa']
+        );
+        $res1 = $modifier->modify('action.show', $data1, $request);
+        $this->assertStringContainsString('Auth View [CustomViews/Auth/MyEmail2fa]', (string) $res1->getBody());
+
+        // 2. Action without specific key -> falls back to action_mfa
+        $data2 = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'action.show',
+            status: 'info',
+            statusCode: 200,
+            data: ['action' => 'sms_otp']
+        );
+        $res2 = $modifier->modify('action.show', $data2, $request);
+        $this->assertStringContainsString('Auth View [CustomViews/Auth/FallbackAction]', (string) $res2->getBody());
+
+        // Reset config
+        unset(config('Auth')->views['action_email_2fa']);
+        config('Auth')->views['action_mfa'] = 'Jengo\Auth\Views\mfa_challenge';
+    }
 }
 
