@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useForm, page } from '@inertiajs/svelte';
+  import { useForm, page, router } from '@inertiajs/svelte';
 
   export let error: string = '';
   export let message: string = '';
@@ -15,6 +15,17 @@
 
   function submit() {
     $form.post('/auth/action/handle');
+  }
+
+  function resend() {
+    router.post('/auth/action/challenge', {}, {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  }
+
+  function cancel() {
+    router.post('/auth/action/cancel');
   }
 </script>
 
@@ -51,7 +62,7 @@
           type="text"
           class="w-full text-center text-2xl tracking-widest px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none"
           placeholder="000 000"
-          maxlength="7"
+          maxLength={7}
           required
           autofocus
         />
@@ -68,5 +79,23 @@
         {$form.processing ? 'Verifying...' : 'Verify Code'}
       </button>
     </form>
+
+    <div class="mt-6 flex items-center justify-between text-xs">
+      <button
+        type="button"
+        on:click={resend}
+        class="text-blue-400 hover:text-blue-300 font-medium transition"
+      >
+        Resend Code
+      </button>
+
+      <button
+        type="button"
+        on:click={cancel}
+        class="text-slate-400 hover:text-slate-300 transition"
+      >
+        Cancel
+      </button>
+    </div>
   </div>
 </div>

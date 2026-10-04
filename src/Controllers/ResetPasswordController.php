@@ -18,6 +18,10 @@ class ResetPasswordController extends BaseAuthController
             return $disabled;
         }
 
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
+        }
+
         $token = $token ?? $this->request->getGet('token');
         if (! $token) {
             return $this->notFoundResponse('reset_password.invalid_token');
@@ -38,6 +42,10 @@ class ResetPasswordController extends BaseAuthController
     {
         if ($disabled = $this->ensureFeatureEnabled('allowPasswordReset', 'reset_password')) {
             return $disabled;
+        }
+
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
         }
 
         /** @var ResetPasswordFormHandler $form */

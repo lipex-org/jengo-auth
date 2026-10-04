@@ -13,54 +13,61 @@ use Jengo\Auth\DTOs\AuthResponseData;
 class ActionController extends BaseAuthController
 {
     /**
-     * Helper to retrieve the current pending actions list and user.
-     *
-     * @return array{0: array<string>, 1: \Jengo\Auth\Entities\User}|null
-     */
-    protected function getPendingContext(): ?array
-    {
-        $session = Services::session();
-        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
-        $userId = $session->get($sessionKey);
-
-        $actions = $session->get('auth_pending_actions');
-        if (! is_array($actions) || empty($actions)) {
-            $single = $session->get('auth_pending_action');
-            $actions = $single ? [$single] : [];
-        }
-
-        if (! $userId || empty($actions)) {
-            return null;
-        }
-
-        $user = auth()->getUserModel()->find((int) $userId);
-        if (! $user) {
-            return null;
-        }
-
-        return [$actions, $user];
-    }
-
-    /**
      * Display the challenge for the active post-auth action in the pipeline.
      */
     public function show(): ResponseInterface
     {
         $context = $this->getPendingContext();
         if (! $context) {
-            return $this->notFoundResponse('action.invalid');
+            $fallbackUrl = auth()->check()
+                ? (config('Auth')->redirects['login'] ?? '/')
+                : (config('Auth')->redirects['logout'] ?? auth_url('login'));
+
+            return redirect()->to($fallbackUrl);
         }
 
         [$actions, $user] = $context;
         $currentActionClass = $actions[0];
 
         if (! class_exists($currentActionClass)) {
-            return $this->notFoundResponse('action.invalid');
+            throw new \RuntimeException("Authentication action class [{$currentActionClass}] does not exist.");
         }
 
         /** @var AuthActionInterface $actionInstance */
         $actionInstance = new $currentActionClass();
 
+        return $actionInstance->show($this->request, $user);
+    }
+
+    /**
+     * Re-issue or trigger a challenge on the active post-auth action (e.g. resend 2FA code).
+     */
+    public function challenge(): ResponseInterface
+    {
+        $context = $this->getPendingContext();
+        if (! $context) {
+            $fallbackUrl = auth()->check()
+                ? (config('Auth')->redirects['login'] ?? '/')
+                : (config('Auth')->redirects['logout'] ?? auth_url('login'));
+
+            return redirect()->to($fallbackUrl);
+        }
+
+        [$actions, $user] = $context;
+        $currentActionClass = $actions[0];
+
+        if (! class_exists($currentActionClass)) {
+            throw new \RuntimeException("Authentication action class [{$currentActionClass}] does not exist.");
+        }
+
+        /** @var AuthActionInterface $actionInstance */
+        $actionInstance = new $currentActionClass();
+
+        if (method_exists($actionInstance, 'challenge')) {
+            return $actionInstance->challenge($this->request, $user);
+        }
+
+        // Fallback to show() if action does not define specific challenge logic
         return $actionInstance->show($this->request, $user);
     }
 
@@ -74,7 +81,11 @@ class ActionController extends BaseAuthController
     {
         $context = $this->getPendingContext();
         if (! $context) {
-            return $this->notFoundResponse('action.invalid');
+            $fallbackUrl = auth()->check()
+                ? (config('Auth')->redirects['login'] ?? '/')
+                : (config('Auth')->redirects['logout'] ?? auth_url('login'));
+
+            return redirect()->to($fallbackUrl);
         }
 
         [$actions, $user] = $context;
@@ -83,7 +94,7 @@ class ActionController extends BaseAuthController
         $currentActionClass = $actions[0];
 
         if (! class_exists($currentActionClass)) {
-            return $this->notFoundResponse('action.invalid');
+            throw new \RuntimeException("Authentication action class [{$currentActionClass}] does not exist.");
         }
 
         /** @var AuthActionInterface $actionInstance */
@@ -137,5 +148,55 @@ class ActionController extends BaseAuthController
         );
 
         return $this->renderResponse('action.success', $data);
+    }
+
+    /**
+     * Cancel the ongoing authentication action pipeline and clear pending session state.
+     */
+    public function cancel(): ResponseInterface
+    {
+        auth()->cancelPendingActions();
+
+        $data = new AuthResponseData(
+            action: 'action.cancelled',
+            status: 'info',
+            statusCode: 200,
+            message: 'Authentication action cancelled.',
+            redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login'),
+            data: [
+                'use_inertia_location' => true,
+            ]
+        );
+
+        return $this->renderResponse('action.cancelled', $data);
+    }
+
+     /**
+     * Helper to retrieve the current pending actions list and user.
+     *
+     * @return array{0: array<string>, 1: \Jengo\Auth\Entities\User}|null
+     */
+    protected function getPendingContext(): ?array
+    {
+        $session = Services::session();
+        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
+        $userId = $session->get($sessionKey);
+
+        $actions = $session->get('auth_pending_actions');
+        if (! is_array($actions) || empty($actions)) {
+            $single = $session->get('auth_pending_action');
+            $actions = $single ? [$single] : [];
+        }
+
+        if (! $userId || empty($actions)) {
+            return null;
+        }
+
+        $user = auth()->getUserModel()->find((int) $userId);
+        if (! $user) {
+            return null;
+        }
+
+        return [$actions, $user];
     }
 }

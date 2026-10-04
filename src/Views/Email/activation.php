@@ -14,13 +14,16 @@
     <div class="container">
         <h2>Welcome to Jengo!</h2>
         <p>Hello <?= esc($user->username ?? 'there') ?>,</p>
-        <p>Thanks for creating an account. Please click the button below to verify your email address and activate your account:</p>
-        <p style="text-align: center;">
-            <a href="<?= esc($url) ?>" class="button">Activate Account</a>
-        </p>
-        <p style="font-size: 14px; color: #64748b;">Or copy and paste this URL into your browser:<br>
-            <a href="<?= esc($url) ?>"><?= esc($url) ?></a>
-        </p>
+        <p>Thanks for creating an account. Use the following 6-digit security code to activate your account:</p>
+        <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1e293b; background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 24px 0; text-align: center;">
+            <?= esc($token ?? $code ?? '') ?>
+        </div>
+        <p style="font-size: 14px; color: #64748b; text-align: center;">This code expires in 30 minutes.</p>
+        <?php if (! empty($url)): ?>
+            <p style="text-align: center; margin-top: 24px;">
+                <a href="<?= esc($url) ?>" class="button">Go to Activation Page</a>
+            </p>
+        <?php endif; ?>
         <div class="footer">
             &copy; <?= date('Y') ?> Jengo Auth. All rights reserved.
         </div>

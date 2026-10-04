@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage, router } from '@inertiajs/react';
 
 interface MfaChallengeProps {
   message?: string;
@@ -22,6 +22,17 @@ export default function MfaChallenge({ error: initialError, message: initialMess
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     post('/auth/action/handle');
+  };
+
+  const handleResend = () => {
+    router.post('/auth/action/challenge', {}, {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
+  const handleCancel = () => {
+    router.post('/auth/action/cancel');
   };
 
   return (
@@ -73,7 +84,26 @@ export default function MfaChallenge({ error: initialError, message: initialMess
             {processing ? 'Verifying...' : 'Verify Code'}
           </button>
         </form>
+
+        <div className="mt-6 flex items-center justify-between text-xs">
+          <button
+            type="button"
+            onClick={handleResend}
+            className="text-blue-400 hover:text-blue-300 font-medium transition"
+          >
+            Resend Code
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="text-slate-400 hover:text-slate-300 transition"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+

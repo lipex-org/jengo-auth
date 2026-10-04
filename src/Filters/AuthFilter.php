@@ -21,6 +21,26 @@ class AuthFilter implements FilterInterface
     {
         $auth = Services::auth();
 
+
+        // Explicite guard check via filter arguments takes precedence over controller attributes
+        // Standard filter route check: only check guard if explicitly specified in arguments
+        $guardName = $arguments[0] ?? null;
+
+        if ($guardName) {
+            $guard = $auth->guard($guardName);
+
+            // Since the guard is explicitly specified (and validated), we must check for pending actions here 
+            // and redirect before checking for authetication. This is because the user may be logged in but 
+            // still have pending actions to complete (e.g. MFA, Terms, etc.)
+            if ($auth->hasPendingActions()) {
+                return redirect()->to(auth_url('auth.action.show'));
+            }
+
+            if (!$guard->check()) {
+                return $this->unauthorizedResponse($request);
+            }
+        }
+
         // Check if route controller has attributes
         $router = Services::router();
         $controllerName = $router->controllerName();
@@ -34,17 +54,6 @@ class AuthFilter implements FilterInterface
             }
         }
 
-        // Standard filter route check: only check guard if explicitly specified in arguments
-        $guardName = $arguments[0] ?? null;
-
-        if ($guardName) {
-            $guard = $auth->guard($guardName);
-
-            if (! $guard->check()) {
-                return $this->unauthorizedResponse($request);
-            }
-        }
-
         return;
     }
 
@@ -52,7 +61,7 @@ class AuthFilter implements FilterInterface
     {
         $auth = Services::auth();
 
-        if (! class_exists($controllerName)) {
+        if (!class_exists($controllerName)) {
             return null;
         }
 
@@ -87,7 +96,14 @@ class AuthFilter implements FilterInterface
             $instance = $authAttr->newInstance();
             $guard = $instance->guard ? $auth->guard($instance->guard) : $auth->guard();
 
-            if (! $guard->check()) {
+            // Since the auth attribute is present, then we must check for pending actions here 
+            // and redirect before checking for authetication. This is because the user may be 
+            // logged in but still have pending actions to complete (e.g. MFA, Terms, etc.)
+            if ($auth->hasPendingActions()) {
+                return redirect()->to(auth_url('auth.action.show'));
+            }
+
+            if (!$guard->check()) {
                 return $this->unauthorizedResponse($request);
             }
         }
@@ -100,7 +116,7 @@ class AuthFilter implements FilterInterface
         }
 
         if ($roleAttr !== null) {
-            if (! $auth->check()) {
+            if (!$auth->check()) {
                 return $this->unauthorizedResponse($request);
             }
 
@@ -114,7 +130,7 @@ class AuthFilter implements FilterInterface
                 }
             }
 
-            if (! $hasAny && ! $auth->isSuperAdmin($auth->user())) {
+            if (!$hasAny && !$auth->isSuperAdmin($auth->user())) {
                 return $this->forbiddenResponse($request, "Requires one of roles: " . implode(', ', $instance->roles));
             }
         }
@@ -125,7 +141,7 @@ class AuthFilter implements FilterInterface
             $canAttr = $refMethod->getAttributes(Can::class)[0] ?? null;
 
             if ($canAttr !== null) {
-                if (! $auth->check()) {
+                if (!$auth->check()) {
                     return $this->unauthorizedResponse($request);
                 }
 
@@ -139,7 +155,7 @@ class AuthFilter implements FilterInterface
                         ?? Services::router()->params()[0] ?? null;
                 }
 
-                if (! $auth->can($instance->permission, $resource)) {
+                if (!$auth->can($instance->permission, $resource)) {
                     return $this->forbiddenResponse($request, "Unauthorized action [{$instance->permission}].");
                 }
             }
@@ -174,12 +190,12 @@ class AuthFilter implements FilterInterface
             return Services::response()
                 ->setStatusCode(401)
                 ->setJSON([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'Unauthenticated.',
                 ]);
         }
 
-        return redirect()->to('/login')->with('error', 'Please log in to continue.');
+        return redirect()->to(auth_url('login'))->with('error', 'Please log in to continue.');
     }
 
     protected function forbiddenResponse(RequestInterface $request, string $message)
@@ -188,7 +204,7 @@ class AuthFilter implements FilterInterface
             return Services::response()
                 ->setStatusCode(403)
                 ->setJSON([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => $message,
                 ]);
         }
@@ -199,12 +215,12 @@ class AuthFilter implements FilterInterface
     protected function isApiOrJson(RequestInterface $request): bool
     {
         $accept = $request->getHeaderLine('Accept');
-        if (! $accept && isset($_SERVER['HTTP_ACCEPT'])) {
+        if (!$accept && isset($_SERVER['HTTP_ACCEPT'])) {
             $accept = (string) $_SERVER['HTTP_ACCEPT'];
         }
 
         $authHeader = $request->getHeaderLine('Authorization');
-        if (! $authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
             $authHeader = (string) $_SERVER['HTTP_AUTHORIZATION'];
         }
 
@@ -213,6 +229,6 @@ class AuthFilter implements FilterInterface
 
         return str_contains($accept, 'application/json')
             || str_starts_with($cleanPath, 'api/')
-            || ! empty($authHeader);
+            || !empty($authHeader);
     }
 }

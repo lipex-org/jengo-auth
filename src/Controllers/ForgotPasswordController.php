@@ -18,6 +18,10 @@ class ForgotPasswordController extends BaseAuthController
             return $disabled;
         }
 
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
+        }
+
         $data = new AuthResponseData(
             action: 'forgot_password.view',
             status: 'success',
@@ -33,6 +37,10 @@ class ForgotPasswordController extends BaseAuthController
     {
         if ($disabled = $this->ensureFeatureEnabled('allowPasswordReset', 'forgot_password')) {
             return $disabled;
+        }
+
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
         }
 
         /** @var ForgotPasswordFormHandler $form */

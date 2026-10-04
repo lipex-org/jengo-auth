@@ -24,6 +24,10 @@ class RegisterController extends BaseAuthController
             return $disabled;
         }
 
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
+        }
+
         if (auth()->check()) {
             return redirect()->to(config('Auth')->redirects['register'] ?? config('Auth')->redirects['login'] ?? '/');
         }
@@ -46,6 +50,10 @@ class RegisterController extends BaseAuthController
     {
         if ($disabled = $this->ensureFeatureEnabled('allowRegistration', 'register')) {
             return $disabled;
+        }
+
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
         }
 
         /** @var RegisterFormHandler $form */
@@ -109,7 +117,10 @@ class RegisterController extends BaseAuthController
                 statusCode: 200,
                 message: 'Registration successful. Action required.',
                 redirectTo: auth_url('auth.action.show'),
-                user: $user
+                user: $user,
+                data: [
+                    'use_inertia_location' => true,
+                ]
             );
             return $this->renderResponse('register.action_required', $data);
         }

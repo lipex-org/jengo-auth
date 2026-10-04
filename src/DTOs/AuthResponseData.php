@@ -23,7 +23,7 @@ class AuthResponseData
 
     public function isSuccess(): bool
     {
-        return $this->status === 'success';
+        return $this->status === 'success' || $this->status === 'info' || $this->statusCode < 400;
     }
 
     public function toArray(): array

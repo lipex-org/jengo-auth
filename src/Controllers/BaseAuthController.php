@@ -20,7 +20,8 @@ abstract class BaseAuthController extends Controller
         parent::initController($request, $response, $logger);
 
         if (function_exists('helper')) {
-            helper('jengo');
+            helper('Jengo\Base\Helpers\jengo');
+            helper('Jengo\Auth\Helpers\auth');
         }
 
         $this->responseHandler = new ResponseHandler();

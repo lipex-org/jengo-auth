@@ -14,6 +14,7 @@ class InertiaModifier implements ResponseModifierInterface
 {
     public function modify(string $action, AuthResponseData $data, RequestInterface $request): ResponseInterface
     {
+
         // 1. Errors
         if (!$data->isSuccess()) {
             if ($data->statusCode === 404) {

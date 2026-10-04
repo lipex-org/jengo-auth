@@ -19,6 +19,19 @@
     <div class="card">
         <h2>Two-Factor Verification</h2>
         <p class="info">Please enter the verification code sent to your registered contact.</p>
+
+        <?php if (session()->getFlashdata('message')): ?>
+            <div style="background: #dcfce7; color: #166534; padding: 0.75rem; border-radius: 4px; font-size: 0.875rem; margin-bottom: 1rem;">
+                <?= esc(session()->getFlashdata('message')) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('error')): ?>
+            <div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: 4px; font-size: 0.875rem; margin-bottom: 1rem;">
+                <?= esc(session()->getFlashdata('error')) ?>
+            </div>
+        <?php endif; ?>
+
         <form action="<?= url_to('auth.action.handle') ?>" method="post">
             <?= csrf_field() ?>
             <div class="input-group">
@@ -27,6 +40,19 @@
             </div>
             <button type="submit">Verify & Continue</button>
         </form>
+
+        <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem;">
+            <form action="<?= url_to('auth.action.challenge') ?>" method="post" style="display: inline;">
+                <?= csrf_field() ?>
+                <button type="submit" style="background: none; border: none; color: #2563eb; padding: 0; font-size: 0.875rem; font-weight: normal; width: auto; cursor: pointer;">
+                    Resend Code
+                </button>
+            </form>
+
+            <a href="<?= url_to('auth.action.cancel') ?>" style="color: #64748b; text-decoration: none;">
+                Cancel
+            </a>
+        </div>
     </div>
 </body>
 </html>

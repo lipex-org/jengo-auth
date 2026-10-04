@@ -22,6 +22,10 @@ class LoginController extends BaseAuthController
             return $disabled;
         }
 
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
+        }
+
         if (auth()->check()) {
             return redirect()->to(config('Auth')->redirects['login'] ?? '/');
         }
@@ -44,6 +48,10 @@ class LoginController extends BaseAuthController
     {
         if ($disabled = $this->ensureFeatureEnabled('allowLogin', 'login')) {
             return $disabled;
+        }
+
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
         }
 
         /** @var LoginFormHandler $form */
@@ -74,12 +82,12 @@ class LoginController extends BaseAuthController
         }
 
         $result = $auth->attempt([
-            'email'    => $identifier,
+            'email' => $identifier,
             'username' => $identifier,
             'password' => $password,
         ], $remember);
 
-        if (! $result->isSuccess()) {
+        if (!$result->isSuccess()) {
             $rateLimiter->recordFailure($this->request, (string) $identifier, 'login', $decaySeconds);
             Events::trigger('failedLogin', ['identifier' => $identifier, 'ip' => $this->request->getIPAddress()]);
 
@@ -102,14 +110,14 @@ class LoginController extends BaseAuthController
         $validActions = array_values(array_filter($actions, fn($c) => is_string($c) && class_exists($c)));
 
         if ($validActions !== []) {
+            // Un-authenticate from main session guard while preserving pending action keys
+            $auth->guard()->logout();
+
             $session = Services::session();
             $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
             $session->set($sessionKey, $user->id);
             $session->set('auth_pending_actions', $validActions);
             $session->set('auth_pending_action', $validActions[0]);
-
-            // Log user out of full auth until action completes
-            $auth->logout();
 
             $data = new AuthResponseData(
                 action: 'login.action_required',
@@ -117,7 +125,10 @@ class LoginController extends BaseAuthController
                 statusCode: 200,
                 message: 'Additional authentication action required.',
                 redirectTo: auth_url('auth.action.show'),
-                user: $user
+                user: $user,
+                data: [
+                    'use_inertia_location' => true,
+                ]
             );
             return $this->renderResponse('login.action_required', $data);
         }
@@ -159,7 +170,6 @@ class LoginController extends BaseAuthController
             message: 'Logged out successfully.',
             redirectTo: config('Auth')->redirects['logout'] ?? auth_url('login'),
             data: [
-                'user' => $user,
                 'use_inertia_location' => true
             ]
         );

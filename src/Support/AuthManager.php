@@ -244,11 +244,56 @@ class AuthManager
     }
 
     /**
-     * Log out current user.
+     * Log out current user and clear any pending action state.
      */
     public function logout(): void
     {
+        $this->cancelPendingActions();
         $this->guard()->logout();
+    }
+
+    /**
+     * Determine if there are pending authentication actions (MFA/pipeline) for the current session.
+     */
+    public function hasPendingActions(): bool
+    {
+        $session = Services::session();
+        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
+        $userId = $session->get($sessionKey);
+
+        $actions = $session->get('auth_pending_actions');
+        if (! is_array($actions) || empty($actions)) {
+            $single = $session->get('auth_pending_action');
+            $actions = $single ? [$single] : [];
+        }
+
+        return $userId !== null && ! empty($actions);
+    }
+
+    /**
+     * Get the pending user undergoing an authentication action pipeline, if any.
+     */
+    public function getPendingUser(): ?User
+    {
+        $session = Services::session();
+        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
+        $userId = $session->get($sessionKey);
+
+        if (! $userId) {
+            return null;
+        }
+
+        return $this->getUserModel()->find((int) $userId);
+    }
+
+    /**
+     * Cancel and wipe any ongoing authentication action pipeline.
+     */
+    public function cancelPendingActions(): void
+    {
+        $session = Services::session();
+        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
+        $session->remove([$sessionKey, 'auth_pending_actions', 'auth_pending_action']);
     }
 
     /**

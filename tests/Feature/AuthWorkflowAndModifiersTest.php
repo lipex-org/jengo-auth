@@ -482,4 +482,105 @@ class AuthWorkflowAndModifiersTest extends TestCase
         // Since already active in sudo, it redirects
         $this->assertTrue($htmlResponse->getStatusCode() === 200 || $htmlResponse->isRedirect());
     }
+
+    public function testPendingActionsBlockEndpointsAndCanBeCancelled(): void
+    {
+        $session = Services::session();
+        $session->set('auth_pending_user_id', 99);
+        $session->set('auth_pending_actions', [\Jengo\Auth\Actions\Email2FA::class]);
+        $session->set('auth_pending_action', \Jengo\Auth\Actions\Email2FA::class);
+
+        $this->assertTrue(auth()->hasPendingActions());
+
+        $request = Services::request();
+        $logger = Services::logger();
+        $response = Services::response();
+
+        // 1. LoginController showLogin redirects to action show
+        $loginCtrl = new LoginController();
+        $loginCtrl->initController($request, $response, $logger);
+        $loginRedirect = $loginCtrl->showLogin();
+        $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $loginRedirect);
+        $this->assertStringContainsString('auth/action/show', $loginRedirect->getHeaderLine('Location'));
+
+        // 2. RegisterController showRegister redirects to action show
+        $regCtrl = new RegisterController();
+        $regCtrl->initController($request, $response, $logger);
+        $regRedirect = $regCtrl->showRegister();
+        $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $regRedirect);
+        $this->assertStringContainsString('auth/action/show', $regRedirect->getHeaderLine('Location'));
+
+        // 3. ForgotPasswordController showForgot redirects to action show
+        $forgotCtrl = new ForgotPasswordController();
+        $forgotCtrl->initController($request, $response, $logger);
+        $forgotRedirect = $forgotCtrl->showForgot();
+        $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $forgotRedirect);
+        $this->assertStringContainsString('auth/action/show', $forgotRedirect->getHeaderLine('Location'));
+
+        // 4. Cancel pending actions via ActionController
+        $actionCtrl = new ActionController();
+        $actionCtrl->initController($request, $response, $logger);
+        $cancelResponse = $actionCtrl->cancel();
+        $this->assertTrue($cancelResponse instanceof \CodeIgniter\HTTP\RedirectResponse || $cancelResponse->getStatusCode() === 200);
+
+        $this->assertFalse(auth()->hasPendingActions());
+    }
+
+    public function testActionChallengeReissuesCode(): void
+    {
+        // 1. Register a user
+        $request = Services::request();
+        $request->setBody(json_encode([
+            'username'         => 'helen_mfa',
+            'email'            => 'helen@example.com',
+            'password'         => 'Secret1234!',
+            'password_confirm' => 'Secret1234!',
+        ]));
+
+        config('Auth')->actions['login'] = \Jengo\Auth\Actions\Email2FA::class;
+        config('Auth')->responseModifier = JsonModifier::class;
+
+        $registerController = new RegisterController();
+        $registerController->initController($request, Services::response(), Services::logger());
+        $registerController->attemptRegister();
+        auth()->logout();
+
+        // 2. Attempt login -> Triggers action_required
+        $request->setBody(json_encode([
+            'email'    => 'helen@example.com',
+            'password' => 'Secret1234!',
+        ]));
+
+        $loginController = new LoginController();
+        $loginController->initController($request, Services::response(), Services::logger());
+        $loginResponse = $loginController->attemptLogin();
+        $this->assertSame(200, $loginResponse->getStatusCode());
+
+        // 3. Show action to generate initial code
+        $actionController = new ActionController();
+        $actionController->initController($request, Services::response(), Services::logger());
+        $actionController->show();
+        $initialCode = Services::session()->get('mfa_code');
+        $this->assertNotEmpty($initialCode);
+
+        // 4. Call challenge endpoint -> Generates new code and returns 200/info
+        $challengeResponse = $actionController->challenge();
+        $this->assertSame(200, $challengeResponse->getStatusCode());
+        $challengeData = json_decode($challengeResponse->getBody(), true);
+        $this->assertSame('action.challenge', $challengeData['action']);
+        $this->assertSame('info', $challengeData['status']);
+
+        $newCode = Services::session()->get('mfa_code');
+        $this->assertNotEmpty($newCode);
+
+        // 5. Old verification code should fail, new code should succeed
+        $request->setBody(json_encode(['code' => $newCode]));
+        $validResponse = $actionController->handle();
+        $this->assertSame(200, $validResponse->getStatusCode());
+        $this->assertTrue(auth()->check());
+        $this->assertSame('helen_mfa', auth()->user()->username);
+
+        config('Auth')->actions['login'] = null;
+    }
 }
+

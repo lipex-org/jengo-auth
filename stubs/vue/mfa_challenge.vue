@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useForm, usePage } from '@inertiajs/vue3';
+import { useForm, usePage, router } from '@inertiajs/vue3';
 
 const props = defineProps<{
   error?: string;
@@ -20,6 +20,17 @@ const form = useForm({
 
 const submit = () => {
   form.post('/auth/action/handle');
+};
+
+const resend = () => {
+  router.post('/auth/action/challenge', {}, {
+    preserveScroll: true,
+    preserveState: true,
+  });
+};
+
+const cancel = () => {
+  router.post('/auth/action/cancel');
 };
 </script>
 
@@ -67,6 +78,24 @@ const submit = () => {
           {{ form.processing ? 'Verifying...' : 'Verify Code' }}
         </button>
       </form>
+
+      <div class="mt-6 flex items-center justify-between text-xs">
+        <button
+          type="button"
+          @click="resend"
+          class="text-blue-400 hover:text-blue-300 font-medium transition"
+        >
+          Resend Code
+        </button>
+
+        <button
+          type="button"
+          @click="cancel"
+          class="text-slate-400 hover:text-slate-300 transition"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   </div>
 </template>

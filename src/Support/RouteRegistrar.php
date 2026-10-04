@@ -195,7 +195,10 @@ class RouteRegistrar
             $pathAction = trim((string) ($paths['action'] ?? 'auth/action'), '/');
 
             $routes->get($pathAction . '/show', [$actionCtrl, 'show'], ['as' => 'auth.action.show']);
+            $routes->post($pathAction . '/challenge', [$actionCtrl, 'challenge'], ['as' => 'auth.action.challenge']);
             $routes->post($pathAction . '/handle', [$actionCtrl, 'handle'], ['as' => 'auth.action.handle']);
+            $routes->post($pathAction . '/cancel', [$actionCtrl, 'cancel'], ['as' => 'auth.action.cancel']);
+            $routes->get($pathAction . '/cancel', [$actionCtrl, 'cancel'], ['as' => 'auth.action.cancel.get']);
         }
 
         // 6. Sudo Mode

@@ -18,6 +18,10 @@ class MagicLinkController extends BaseAuthController
             return $disabled;
         }
 
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
+        }
+
         $data = new AuthResponseData(
             action: 'magic_link.view',
             status: 'success',
@@ -33,6 +37,10 @@ class MagicLinkController extends BaseAuthController
     {
         if ($disabled = $this->ensureFeatureEnabled('allowMagicLink', 'magic_link')) {
             return $disabled;
+        }
+
+        if (auth()->hasPendingActions()) {
+            return redirect()->to(auth_url('auth.action.show'));
         }
 
         /** @var MagicLinkFormHandler $form */
