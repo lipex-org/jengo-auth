@@ -18,7 +18,7 @@
         <div class="code-box"><?= esc($code) ?></div>
         <p style="font-size: 14px; color: #64748b;">This code expires in 5 minutes. Never share this code with anyone.</p>
         <div class="footer">
-            &copy; <?= date('Y') ?> Jengo Auth. All rights reserved.
+            &copy; <?= date('Y') ?> <?= esc(config('Auth')->branding['companyName'] ?? config('Auth')->branding['name'] ?? 'Jengo Auth') ?>. All rights reserved.
         </div>
     </div>
 </body>

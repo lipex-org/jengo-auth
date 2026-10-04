@@ -45,10 +45,18 @@ class StandardViewModifier implements ResponseModifierInterface
         if ($viewName !== null || str_ends_with($action, '.view') || str_ends_with($action, '.show') || str_ends_with($action, '.index')) {
             if ($viewName && function_exists('view')) {
                 try {
+                    $authConfig = function_exists('config') ? config('Auth') : null;
+                    $branding = $authConfig->branding ?? [];
+                    $brand = [
+                        'name'        => $branding['name'] ?? $authConfig->brandName ?? 'Jengo',
+                        'logo'        => $branding['logo'] ?? $authConfig->brandLogo ?? null,
+                        'companyName' => $branding['companyName'] ?? $authConfig->companyName ?? null,
+                    ];
                     $html = view($viewName, array_merge($data->data, [
                         'user'    => $data->user,
                         'message' => $data->message,
                         'errors'  => $data->errors,
+                        'brand'   => $brand,
                     ]));
                     return $response->setStatusCode($data->statusCode)->setBody($html);
                 } catch (\Throwable $e) {

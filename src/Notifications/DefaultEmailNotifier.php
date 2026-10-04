@@ -59,8 +59,10 @@ class DefaultEmailNotifier implements NotificationSenderInterface
 
     public function sendNotification(string $type, User $user, array $data = []): bool
     {
-        $subject = $data['subject'] ?? 'Notification from Jengo Auth';
-        $view = config('Auth')->emailViews[$type] ?? null;
+        $authConfig = config('Auth');
+        $brandName = $authConfig->branding['name'] ?? $authConfig->brandName ?? 'Jengo Auth';
+        $subject = $data['subject'] ?? "Notification from {$brandName}";
+        $view = $authConfig->emailViews[$type] ?? null;
 
         if (! $view) {
             return false;
@@ -77,8 +79,10 @@ class DefaultEmailNotifier implements NotificationSenderInterface
         }
 
         $emailConfig = config('Email');
-        $fromEmail = !empty($emailConfig->fromEmail) ? $emailConfig->fromEmail : 'noreply@example.com';
-        $fromName  = !empty($emailConfig->fromName) ? $emailConfig->fromName : 'Jengo Auth';
+        $authConfig  = config('Auth');
+        $brandName   = $authConfig->branding['name'] ?? $authConfig->brandName ?? 'Jengo Auth';
+        $fromEmail   = !empty($emailConfig->fromEmail) ? $emailConfig->fromEmail : 'noreply@example.com';
+        $fromName    = !empty($emailConfig->fromName) ? $emailConfig->fromName : $brandName;
 
         try {
             $htmlBody = view($viewName, $data);

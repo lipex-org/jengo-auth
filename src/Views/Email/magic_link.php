@@ -23,7 +23,7 @@
         </p>
         <p style="font-size: 14px; color: #64748b;">This link is valid for 15 minutes. If you did not request this email, you can safely ignore it.</p>
         <div class="footer">
-            &copy; <?= date('Y') ?> Jengo Auth. All rights reserved.
+            &copy; <?= date('Y') ?> <?= esc(config('Auth')->branding['companyName'] ?? config('Auth')->branding['name'] ?? 'Jengo Auth') ?>. All rights reserved.
         </div>
     </div>
 </body>

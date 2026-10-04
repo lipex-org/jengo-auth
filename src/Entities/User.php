@@ -45,9 +45,13 @@ class User extends BaseEntity
     /**
      * Create a new personal access token for the user.
      */
-    public function createToken(string $name, array $abilities = ['*'], ?DateTimeInterface $expiresAt = null): TokenResult
-    {
-        return auth()->createTokenFor($this, $name, $abilities, $expiresAt);
+    public function createToken(
+        string $name,
+        array $abilities = ['*'],
+        ?DateTimeInterface $expiresAt = null,
+        ?string $prefix = null
+    ): TokenResult {
+        return auth()->createTokenFor($this, $name, $abilities, $expiresAt, $prefix);
     }
 
     /**

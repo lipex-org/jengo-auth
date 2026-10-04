@@ -71,6 +71,69 @@ class RouteRegistrar
     }
 
     /**
+     * Publish core authentication routes (login, logout, registration, password reset).
+     */
+    public static function core(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['login', 'register', 'password-reset'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish passwordless Magic Link login and verification routes.
+     */
+    public static function magicLink(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['magic-link'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish post-auth action pipeline / MFA challenge routes (show, challenge, handle, cancel).
+     */
+    public static function action(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['action'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish Sudo Mode (step-up authentication) challenge and verification routes.
+     */
+    public static function sudo(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['sudo'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish Two-Factor Authentication user settings & enrollment routes.
+     */
+    public static function twoFactor(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['two-factor'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish Personal Access Tokens management routes.
+     */
+    public static function tokens(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['tokens'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish all authentication features and endpoints.
+     */
+    public static function all(RouteCollection $routes, array $options = []): void
+    {
+        static::routes($routes, $options);
+    }
+
+
+    /**
      * Register individual route definitions with fixed canonical labels ('as').
      */
     protected static function registerDefinitions(RouteCollection $routes, array $options, mixed $config): void

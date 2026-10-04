@@ -114,9 +114,11 @@ class TokenGuard implements GuardInterface
         User $user,
         string $name,
         array $abilities = ['*'],
-        ?DateTimeInterface $expiresAt = null
+        ?DateTimeInterface $expiresAt = null,
+        ?string $prefix = null
     ): TokenResult {
-        $plainText = bin2hex(random_bytes(32));
+        $prefix ??= (string) (config('Auth')->tokenPrefix ?? 'jengo_pat_');
+        $plainText = $prefix . bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $plainText);
 
         $token = new UserToken([

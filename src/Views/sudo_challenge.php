@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Access (Sudo Mode) - Jengo</title>
+    <title>Confirm Access (Sudo Mode) - <?= esc(config('Auth')->branding['name'] ?? 'Jengo') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="h-full flex items-center justify-center p-6 text-slate-100 font-sans antialiased">

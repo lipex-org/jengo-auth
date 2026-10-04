@@ -28,6 +28,14 @@ class AuthResponseData
 
     public function toArray(): array
     {
+        $authConfig = function_exists('config') ? config('Auth') : null;
+        $branding = $authConfig->branding ?? [];
+        $brand = [
+            'name'        => $branding['name'] ?? $authConfig->brandName ?? 'Jengo',
+            'logo'        => $branding['logo'] ?? $authConfig->brandLogo ?? null,
+            'companyName' => $branding['companyName'] ?? $authConfig->companyName ?? null,
+        ];
+
         return [
             'action'      => $this->action,
             'status'      => $this->status,
@@ -36,6 +44,7 @@ class AuthResponseData
             'data'        => $this->data,
             'errors'      => $this->errors,
             'redirectTo'  => $this->redirectTo,
+            'brand'       => $brand,
             'user'        => $this->user ? [
                 'id'       => $this->user->id,
                 'username' => $this->user->username,

@@ -192,4 +192,68 @@ class RouteRegistrarTest extends TestCase
         $this->assertSame('/security/step-up', $routes->reverseRoute('auth.sudo'));
         $this->assertSame('/account/mfa-settings', $routes->reverseRoute('two-factor.index'));
     }
+
+    public function testDedicatedFeatureRouteHelpers(): void
+    {
+        $routes = Services::routes();
+
+        // 1. Core routes helper
+        $routes->resetRoutes();
+        \Jengo\Auth\Support\RouteRegistrar::core($routes);
+        $getRoutes = $routes->getRoutes('GET');
+        $this->assertArrayHasKey('login', $getRoutes);
+        $this->assertArrayHasKey('register', $getRoutes);
+        $this->assertArrayHasKey('forgot-password', $getRoutes);
+        $this->assertArrayNotHasKey('magic-link', $getRoutes);
+        $this->assertArrayNotHasKey('user/two-factor', $getRoutes);
+
+        // 2. Magic Link helper
+        $routes->resetRoutes();
+        \Jengo\Auth\Support\RouteRegistrar::magicLink($routes);
+        $getRoutes = $routes->getRoutes('GET');
+        $this->assertArrayHasKey('magic-link', $getRoutes);
+        $this->assertArrayNotHasKey('login', $getRoutes);
+
+        // 3. Action / MFA pipeline helper
+        $routes->resetRoutes();
+        \Jengo\Auth\Support\RouteRegistrar::action($routes);
+        $getRoutes = $routes->getRoutes('GET');
+        $postRoutes = $routes->getRoutes('POST');
+        $this->assertArrayHasKey('auth/action/show', $getRoutes);
+        $this->assertArrayHasKey('auth/action/challenge', $postRoutes);
+        $this->assertArrayHasKey('auth/action/handle', $postRoutes);
+        $this->assertArrayHasKey('auth/action/cancel', $postRoutes);
+        $this->assertArrayNotHasKey('login', $getRoutes);
+
+        // 4. Sudo Mode helper
+        $routes->resetRoutes();
+        \Jengo\Auth\Support\RouteRegistrar::sudo($routes);
+        $getRoutes = $routes->getRoutes('GET');
+        $postRoutes = $routes->getRoutes('POST');
+        $this->assertArrayHasKey('auth/sudo', $getRoutes);
+        $this->assertArrayHasKey('auth/sudo/challenge', $postRoutes);
+        $this->assertArrayHasKey('auth/sudo/verify', $postRoutes);
+        $this->assertArrayHasKey('auth/sudo/exit', $postRoutes);
+        $this->assertArrayNotHasKey('login', $getRoutes);
+
+        // 5. Two-Factor helper
+        $routes->resetRoutes();
+        \Jengo\Auth\Support\RouteRegistrar::twoFactor($routes);
+        $getRoutes = $routes->getRoutes('GET');
+        $postRoutes = $routes->getRoutes('POST');
+        $this->assertArrayHasKey('user/two-factor', $getRoutes);
+        $this->assertArrayHasKey('user/two-factor/enroll/start', $postRoutes);
+        $this->assertArrayHasKey('user/two-factor/enroll/confirm', $postRoutes);
+        $this->assertArrayNotHasKey('login', $getRoutes);
+
+        // 6. Tokens helper
+        $routes->resetRoutes();
+        \Jengo\Auth\Support\RouteRegistrar::tokens($routes);
+        $getRoutes = $routes->getRoutes('GET');
+        $postRoutes = $routes->getRoutes('POST');
+        $this->assertArrayHasKey('api/tokens', $getRoutes);
+        $this->assertArrayHasKey('api/tokens', $postRoutes);
+        $this->assertArrayNotHasKey('login', $getRoutes);
+    }
 }
+

@@ -45,6 +45,20 @@ class Auth extends BaseConfig
     ];
 
     /**
+     * Branding settings for emails, default HTML views, and frontend/Inertia props.
+     */
+    public array $branding = [
+        'name'        => 'Jengo',
+        'logo'        => null,
+        'companyName' => null,
+    ];
+
+    /**
+     * Personal Access Token prefix formatting (e.g. 'jengo_pat_', 'acumen_pat_', 'acumen/pat/').
+     */
+    public string $tokenPrefix = 'jengo_pat_';
+
+    /**
      * Feature toggles.
      */
     public bool $allowLogin = true;

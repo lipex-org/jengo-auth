@@ -12,7 +12,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>Welcome to Jengo!</h2>
+        <h2>Welcome to <?= esc(config('Auth')->branding['name'] ?? 'Jengo') ?>!</h2>
         <p>Hello <?= esc($user->username ?? 'there') ?>,</p>
         <p>Thanks for creating an account. Use the following 6-digit security code to activate your account:</p>
         <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1e293b; background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 24px 0; text-align: center;">
@@ -25,7 +25,7 @@
             </p>
         <?php endif; ?>
         <div class="footer">
-            &copy; <?= date('Y') ?> Jengo Auth. All rights reserved.
+            &copy; <?= date('Y') ?> <?= esc(config('Auth')->branding['companyName'] ?? config('Auth')->branding['name'] ?? 'Jengo Auth') ?>. All rights reserved.
         </div>
     </div>
 </body>

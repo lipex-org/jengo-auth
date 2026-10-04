@@ -23,7 +23,7 @@
         </p>
         <p style="font-size: 14px; color: #64748b;">This password reset link will expire in 60 minutes. If you did not request a password reset, no further action is required.</p>
         <div class="footer">
-            &copy; <?= date('Y') ?> Jengo Auth. All rights reserved.
+            &copy; <?= date('Y') ?> <?= esc(config('Auth')->branding['companyName'] ?? config('Auth')->branding['name'] ?? 'Jengo Auth') ?>. All rights reserved.
         </div>
     </div>
 </body>

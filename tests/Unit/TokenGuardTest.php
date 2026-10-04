@@ -230,4 +230,43 @@ class TokenGuardTest extends TestCase
         unset($_SERVER['HTTP_AUTHORIZATION']);
         \Config\Services::resetSingle('request');
     }
+
+    public function testCustomTokenPrefixAndBranding(): void
+    {
+        config('Auth')->tokenPrefix = 'acumen_pat_';
+        config('Auth')->branding = [
+            'name'        => 'Acumen',
+            'companyName' => 'Acumen Global Inc.',
+        ];
+
+        $userModel = new UserModel();
+        $user = new User([
+            'username' => 'prefixuser_' . bin2hex(random_bytes(4)),
+            'active'   => 1,
+        ]);
+        $id = $userModel->insert($user);
+        $user->id = (int) $id;
+
+        $tokenResult = auth()->createTokenFor($user, 'Custom Prefix Token');
+        $this->assertStringStartsWith('acumen_pat_', $tokenResult->plainTextToken);
+
+        // Verify token lookup works as expected
+        $_SERVER['HTTP_AUTHORIZATION'] = "Bearer {$tokenResult->plainTextToken}";
+        \Config\Services::resetSingle('request');
+
+        $guard = new \Jengo\Auth\Authentication\Authenticators\TokenGuard();
+        $this->assertTrue($guard->check());
+        $this->assertSame((int) $user->id, (int) $guard->id());
+
+        // Custom prefix override passed directly
+        $tokenResult2 = auth()->createTokenFor($user, 'Specific Token', ['*'], null, 'custom_slash/pat/');
+        $this->assertStringStartsWith('custom_slash/pat/', $tokenResult2->plainTextToken);
+
+        $_SERVER['HTTP_AUTHORIZATION'] = "Bearer {$tokenResult2->plainTextToken}";
+        \Config\Services::resetSingle('request');
+        $this->assertTrue($guard->check());
+
+        unset($_SERVER['HTTP_AUTHORIZATION']);
+        \Config\Services::resetSingle('request');
+    }
 }

@@ -582,5 +582,27 @@ class AuthWorkflowAndModifiersTest extends TestCase
 
         config('Auth')->actions['login'] = null;
     }
+
+    public function testAuthResponseDataIncludesBrandingMetadata(): void
+    {
+        config('Auth')->branding = [
+            'name'        => 'Acumen',
+            'logo'        => 'https://example.com/logo.png',
+            'companyName' => 'Acumen Global Inc.',
+        ];
+
+        $data = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'login.view',
+            status: 'success',
+            statusCode: 200,
+            message: 'Ready'
+        );
+
+        $array = $data->toArray();
+        $this->assertArrayHasKey('brand', $array);
+        $this->assertSame('Acumen', $array['brand']['name']);
+        $this->assertSame('https://example.com/logo.png', $array['brand']['logo']);
+        $this->assertSame('Acumen Global Inc.', $array['brand']['companyName']);
+    }
 }
 

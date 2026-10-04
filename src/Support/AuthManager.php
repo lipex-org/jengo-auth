@@ -443,11 +443,12 @@ class AuthManager
         User $user,
         string $name,
         array $abilities = ['*'],
-        ?DateTimeInterface $expiresAt = null
+        ?DateTimeInterface $expiresAt = null,
+        ?string $prefix = null
     ): TokenResult {
         $tokenGuard = $this->guard('token');
         if ($tokenGuard instanceof TokenGuard) {
-            return $tokenGuard->createToken($user, $name, $abilities, $expiresAt);
+            return $tokenGuard->createToken($user, $name, $abilities, $expiresAt, $prefix);
         }
 
         throw new RuntimeException("Current token guard does not support personal access token generation.");
@@ -460,6 +461,55 @@ class AuthManager
     {
         RouteRegistrar::routes($routes, $options);
     }
+
+    /**
+     * Publish core authentication routes (login, register, password reset).
+     */
+    public function coreRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::core($routes, $options);
+    }
+
+    /**
+     * Publish magic link authentication routes.
+     */
+    public function magicLinkRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::magicLink($routes, $options);
+    }
+
+    /**
+     * Publish post-auth action pipeline routes.
+     */
+    public function actionRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::action($routes, $options);
+    }
+
+    /**
+     * Publish Sudo Mode routes.
+     */
+    public function sudoRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::sudo($routes, $options);
+    }
+
+    /**
+     * Publish Two-Factor Authentication routes.
+     */
+    public function twoFactorRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::twoFactor($routes, $options);
+    }
+
+    /**
+     * Publish Personal Access Tokens API routes.
+     */
+    public function tokenRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::tokens($routes, $options);
+    }
+
 
     protected ?ResponseHandler $responseHandler = null;
 
