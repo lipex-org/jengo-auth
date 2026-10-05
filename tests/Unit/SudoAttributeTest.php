@@ -37,6 +37,7 @@ final class SudoAttributeTest extends CIUnitTestCase
         parent::setUp();
         Services::session()->destroy();
         Services::sudo()->deactivate();
+        Services::auth()->logout();
     }
 
     private function createRequest(array $headers = []): IncomingRequest

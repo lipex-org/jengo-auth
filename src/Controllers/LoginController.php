@@ -30,11 +30,22 @@ class LoginController extends BaseAuthController
             return redirect()->to(auth_redirect_url('login', '/'));
         }
 
+        $allowMagicLink = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('magic-link');
+        $canResetPassword = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('password-reset');
+        $socialProviders = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('social')
+            ? Services::social()->getAvailableProviders()
+            : [];
+
         $data = new AuthResponseData(
             action: 'login.view',
             status: 'success',
             statusCode: 200,
-            message: null
+            message: null,
+            data: [
+                'allow_magic_link'   => $allowMagicLink,
+                'can_reset_password' => $canResetPassword,
+                'social_providers'   => $socialProviders,
+            ]
         );
 
         return $this->renderResponse('login.view', $data);

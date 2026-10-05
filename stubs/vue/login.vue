@@ -5,11 +5,24 @@ import { useForm, usePage, Link } from '@inertiajs/vue3';
 const props = defineProps<{
   error?: string;
   message?: string;
+  allow_magic_link?: boolean;
+  can_reset_password?: boolean;
+  social_providers?: Array<{ id: string; name: string; url: string }>;
+  data?: {
+    allow_magic_link?: boolean;
+    can_reset_password?: boolean;
+    social_providers?: Array<{ id: string; name: string; url: string }>;
+  };
 }>();
 
 const page = usePage<any>();
 const flash = computed(() => page.props.flash || {});
 const pageErrors = computed(() => page.props.errors || {});
+const pageData = computed(() => page.props.data || {});
+
+const allowMagicLink = computed(() => props.allow_magic_link ?? props.data?.allow_magic_link ?? pageData.value.allow_magic_link ?? false);
+const canResetPassword = computed(() => props.can_reset_password ?? props.data?.can_reset_password ?? pageData.value.can_reset_password ?? true);
+const socialProviders = computed(() => props.social_providers ?? props.data?.social_providers ?? pageData.value.social_providers ?? []);
 
 const error = computed(() => props.error || flash.value.error || pageErrors.value.credentials || pageErrors.value.error);
 const message = computed(() => props.message || flash.value.message || flash.value.success);
@@ -74,7 +87,10 @@ const submit = () => {
             />
             Remember me
           </label>
-          <Link href="/forgot-password" class="text-blue-400 hover:text-blue-300">Forgot password?</Link>
+          <div class="flex items-center gap-3">
+            <Link v-if="allowMagicLink" href="/magic-link" class="text-blue-400 hover:text-blue-300">Magic link</Link>
+            <Link v-if="canResetPassword" href="/forgot-password" class="text-blue-400 hover:text-blue-300">Forgot password?</Link>
+          </div>
         </div>
 
         <button
@@ -85,6 +101,25 @@ const submit = () => {
           {{ form.processing ? 'Signing in...' : 'Sign In' }}
         </button>
       </form>
+
+      <div v-if="socialProviders.length > 0" class="mt-6">
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-slate-800"></div>
+          <span class="flex-shrink mx-4 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Or continue with</span>
+          <div class="flex-grow border-t border-slate-800"></div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          <a
+            v-for="provider in socialProviders"
+            :key="provider.id"
+            :href="provider.url"
+            class="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 transition duration-150"
+          >
+            Sign in with {{ provider.name }}
+          </a>
+        </div>
+      </div>
 
       <div class="mt-6 text-center text-xs text-slate-400">
         Don't have an account?

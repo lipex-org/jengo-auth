@@ -103,6 +103,8 @@ class AuthInstaller extends AbstractInstaller
                     'sudo'                => 'auth/sudo_challenge',
                     'two_factor_settings' => 'auth/two_factor_settings',
                     'tokens'              => 'auth/tokens_index',
+                    'set_password'        => 'auth/set_password',
+                    'identities'          => 'auth/identities',
                 ];
 
                 ClassModifier::fromFile($targetConfig)

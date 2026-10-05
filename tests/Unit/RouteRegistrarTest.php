@@ -130,7 +130,34 @@ class RouteRegistrarTest extends TestCase
         $this->assertSame('/auth/forgot-password', $routes->reverseRoute('forgot-password'));
         $this->assertSame('/auth/reset-password/abc123token', $routes->reverseRoute('reset-password', 'abc123token'));
         $this->assertSame('/auth/magic-link/verify/xyz987token', $routes->reverseRoute('magic-link.verify', 'xyz987token'));
-        $this->assertSame('/auth/auth/action/show', $routes->reverseRoute('auth.action.show'));
+        $this->assertSame('/auth/action/show', $routes->reverseRoute('auth.action.show'));
+        $this->assertSame('/auth/sudo', $routes->reverseRoute('auth.sudo'));
+        $this->assertSame('/auth/two-factor', $routes->reverseRoute('two-factor.index'));
+        $this->assertSame('/auth/tokens', $routes->reverseRoute('tokens.index'));
+    }
+
+    public function testRouteRegistrarConfigureGlobalOptions(): void
+    {
+        \Jengo\Auth\Support\RouteRegistrar::resetGlobalOptions();
+        \Jengo\Auth\Support\RouteRegistrar::configure([
+            'prefix' => 'v1/auth',
+            'paths'  => [
+                'login' => 'sign-in',
+            ],
+        ]);
+
+        $routes = Services::routes();
+        $routes->resetRoutes();
+
+        auth()->routes($routes);
+
+        $getRoutes = $routes->getRoutes('GET');
+        $this->assertArrayHasKey('v1/auth/sign-in', $getRoutes);
+        $this->assertArrayHasKey('v1/auth/action/show', $getRoutes);
+        $this->assertArrayHasKey('v1/auth/sudo', $getRoutes);
+        $this->assertArrayHasKey('v1/auth/two-factor', $getRoutes);
+
+        \Jengo\Auth\Support\RouteRegistrar::resetGlobalOptions();
     }
 
     public function testRouteOptionsTracking(): void
@@ -205,7 +232,7 @@ class RouteRegistrarTest extends TestCase
         $this->assertArrayHasKey('register', $getRoutes);
         $this->assertArrayHasKey('forgot-password', $getRoutes);
         $this->assertArrayNotHasKey('magic-link', $getRoutes);
-        $this->assertArrayNotHasKey('user/two-factor', $getRoutes);
+        $this->assertArrayNotHasKey('two-factor', $getRoutes);
 
         // 2. Magic Link helper
         $routes->resetRoutes();
@@ -219,10 +246,10 @@ class RouteRegistrarTest extends TestCase
         \Jengo\Auth\Support\RouteRegistrar::action($routes);
         $getRoutes = $routes->getRoutes('GET');
         $postRoutes = $routes->getRoutes('POST');
-        $this->assertArrayHasKey('auth/action/show', $getRoutes);
-        $this->assertArrayHasKey('auth/action/challenge', $postRoutes);
-        $this->assertArrayHasKey('auth/action/handle', $postRoutes);
-        $this->assertArrayHasKey('auth/action/cancel', $postRoutes);
+        $this->assertArrayHasKey('action/show', $getRoutes);
+        $this->assertArrayHasKey('action/challenge', $postRoutes);
+        $this->assertArrayHasKey('action/handle', $postRoutes);
+        $this->assertArrayHasKey('action/cancel', $postRoutes);
         $this->assertArrayNotHasKey('login', $getRoutes);
 
         // 4. Sudo Mode helper
@@ -230,10 +257,10 @@ class RouteRegistrarTest extends TestCase
         \Jengo\Auth\Support\RouteRegistrar::sudo($routes);
         $getRoutes = $routes->getRoutes('GET');
         $postRoutes = $routes->getRoutes('POST');
-        $this->assertArrayHasKey('auth/sudo', $getRoutes);
-        $this->assertArrayHasKey('auth/sudo/challenge', $postRoutes);
-        $this->assertArrayHasKey('auth/sudo/verify', $postRoutes);
-        $this->assertArrayHasKey('auth/sudo/exit', $postRoutes);
+        $this->assertArrayHasKey('sudo', $getRoutes);
+        $this->assertArrayHasKey('sudo/challenge', $postRoutes);
+        $this->assertArrayHasKey('sudo/verify', $postRoutes);
+        $this->assertArrayHasKey('sudo/exit', $postRoutes);
         $this->assertArrayNotHasKey('login', $getRoutes);
 
         // 5. Two-Factor helper
@@ -241,9 +268,9 @@ class RouteRegistrarTest extends TestCase
         \Jengo\Auth\Support\RouteRegistrar::twoFactor($routes);
         $getRoutes = $routes->getRoutes('GET');
         $postRoutes = $routes->getRoutes('POST');
-        $this->assertArrayHasKey('user/two-factor', $getRoutes);
-        $this->assertArrayHasKey('user/two-factor/enroll/start', $postRoutes);
-        $this->assertArrayHasKey('user/two-factor/enroll/confirm', $postRoutes);
+        $this->assertArrayHasKey('two-factor', $getRoutes);
+        $this->assertArrayHasKey('two-factor/enroll/start', $postRoutes);
+        $this->assertArrayHasKey('two-factor/enroll/confirm', $postRoutes);
         $this->assertArrayNotHasKey('login', $getRoutes);
 
         // 6. Tokens helper

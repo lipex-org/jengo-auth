@@ -14,18 +14,18 @@
   });
 
   function submit() {
-    $form.post('/auth/action/handle');
+    $form.post('/action/handle');
   }
 
   function resend() {
-    router.post('/auth/action/challenge', {}, {
+    router.post('/action/challenge', {}, {
       preserveScroll: true,
       preserveState: true,
     });
   }
 
   function cancel() {
-    router.post('/auth/action/cancel');
+    router.post('/action/cancel');
   }
 </script>
 

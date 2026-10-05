@@ -123,6 +123,8 @@ class StandardViewModifier implements ResponseModifierInterface
             'sudo.view', 'auth.sudo' => $views['sudo'] ?? 'Jengo\Auth\Views\sudo_challenge',
             'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? 'Jengo\\Auth\\Views\\two_factor_settings',
             'tokens.list', 'tokens.index', 'tokens.view' => $views['tokens'] ?? 'Jengo\\Auth\\Views\\tokens_index',
+            'set_password.view'   => $views['set_password'] ?? 'Jengo\\Auth\\Views\\set_password',
+            'identities.view', 'identities.index' => $views['identities'] ?? 'Jengo\\Auth\\Views\\identities',
             default               => null,
         };
     }

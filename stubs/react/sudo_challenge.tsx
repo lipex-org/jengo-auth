@@ -45,12 +45,12 @@ export default function SudoChallenge({ data: dataProp, available_factors: rootF
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    post('/auth/sudo/verify');
+    post('/sudo/verify');
   };
 
   const handlePasskeyAuth = async () => {
     try {
-      const res = await fetch('/auth/sudo/challenge', {
+      const res = await fetch('/sudo/challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ factor: 'passkey' }),
@@ -79,7 +79,7 @@ export default function SudoChallenge({ data: dataProp, available_factors: rootF
         signature: btoa(String.fromCharCode(...new Uint8Array(cred.response.signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
       };
 
-      const verifyRes = await fetch('/auth/sudo/verify', {
+      const verifyRes = await fetch('/sudo/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ factor: 'passkey', proof }),

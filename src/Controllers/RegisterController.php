@@ -32,11 +32,18 @@ class RegisterController extends BaseAuthController
             return redirect()->to(auth_redirect_url('register', auth_redirect_url('login', '/')));
         }
 
+        $socialProviders = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('social')
+            ? Services::social()->getAvailableProviders()
+            : [];
+
         $data = new AuthResponseData(
             action: 'register.view',
             status: 'success',
             statusCode: 200,
-            message: null
+            message: null,
+            data: [
+                'social_providers' => $socialProviders,
+            ]
         );
 
         return $this->renderResponse('register.view', $data);

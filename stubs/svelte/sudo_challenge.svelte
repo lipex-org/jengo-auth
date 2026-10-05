@@ -30,12 +30,12 @@
   }
 
   function submit() {
-    $form.post('/auth/sudo/verify');
+    $form.post('/sudo/verify');
   }
 
   async function handlePasskeyAuth() {
     try {
-      const res = await fetch('/auth/sudo/challenge', {
+      const res = await fetch('/sudo/challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ factor: 'passkey' }),
@@ -64,7 +64,7 @@
         signature: btoa(String.fromCharCode(...new Uint8Array(cred.response.signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
       };
 
-      const verifyRes = await fetch('/auth/sudo/verify', {
+      const verifyRes = await fetch('/sudo/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ factor: 'passkey', proof }),

@@ -15,6 +15,8 @@ use Jengo\Auth\Authentication\Authenticators\{
     SessionGuard,
     TokenGuard,
 };
+use Jengo\Auth\Social\Providers\GitHubProvider;
+use Jengo\Auth\Social\Providers\GoogleProvider;
 use Jengo\Auth\TwoFactor\Drivers\EmailOtpDriver;
 use Jengo\Auth\TwoFactor\Drivers\PasskeyDriver;
 use Jengo\Auth\TwoFactor\Drivers\PasswordDriver;
@@ -61,6 +63,7 @@ class Auth extends BaseConfig
     public bool $allowPasswordReset = true;
     public bool $allowRemembering = true;
     public bool $allowTokens = true;
+    public bool $allowSocial = true;
 
     /**
      * The response modifier class to format controller responses.
@@ -132,6 +135,31 @@ class Auth extends BaseConfig
     ];
 
     /**
+     * Social / OAuth2 Providers configuration.
+     * Values can be set directly or populated dynamically via CI4 environment variables.
+     */
+    public array $social = [
+        'enabled'                  => true,
+        'auto_link_verified_email' => true,
+        'providers' => [
+            'google' => [
+                'enabled'       => false,
+                'driver'        => GoogleProvider::class,
+                'client_id'     => '',
+                'client_secret' => '',
+                'scopes'        => ['openid', 'profile', 'email'],
+            ],
+            'github' => [
+                'enabled'       => false,
+                'driver'        => GitHubProvider::class,
+                'client_id'     => '',
+                'client_secret' => '',
+                'scopes'        => ['user:email', 'read:user'],
+            ],
+        ],
+    ];
+
+    /**
      * View or Component templates for auth screens.
      * This is the single source of truth for both traditional HTML views (StandardViewModifier)
      * and SPA component identifiers (InertiaModifier).
@@ -149,6 +177,8 @@ class Auth extends BaseConfig
         "sudo"                => "Jengo\Auth\Views\sudo_challenge",
         'two_factor_settings' => 'Jengo\\Auth\\Views\\two_factor_settings',
         'tokens'              => 'Jengo\\Auth\\Views\\tokens_index',
+        'set_password'        => 'Jengo\\Auth\\Views\\set_password',
+        'identities'          => 'Jengo\\Auth\\Views\\identities',
     ];
 
     /**

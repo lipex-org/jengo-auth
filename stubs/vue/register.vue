@@ -5,11 +5,18 @@ import { useForm, usePage, Link } from '@inertiajs/vue3';
 const props = defineProps<{
   error?: string;
   message?: string;
+  social_providers?: Array<{ id: string; name: string; url: string }>;
+  data?: {
+    social_providers?: Array<{ id: string; name: string; url: string }>;
+  };
 }>();
 
 const page = usePage<any>();
 const flash = computed(() => page.props.flash || {});
 const pageErrors = computed(() => page.props.errors || {});
+const pageData = computed(() => page.props.data || {});
+
+const socialProviders = computed(() => props.social_providers ?? props.data?.social_providers ?? pageData.value.social_providers ?? []);
 
 const error = computed(() => props.error || flash.value.error || pageErrors.value.error);
 const message = computed(() => props.message || flash.value.message || flash.value.success);
@@ -98,6 +105,25 @@ const submit = () => {
           {{ form.processing ? 'Creating account...' : 'Create Account' }}
         </button>
       </form>
+
+      <div v-if="socialProviders.length > 0" class="mt-6">
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-slate-800"></div>
+          <span class="flex-shrink mx-4 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Or register with</span>
+          <div class="flex-grow border-t border-slate-800"></div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          <a
+            v-for="provider in socialProviders"
+            :key="provider.id"
+            :href="provider.url"
+            class="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 transition duration-150"
+          >
+            Register with {{ provider.name }}
+          </a>
+        </div>
+      </div>
 
       <div class="mt-6 text-center text-xs text-slate-400">
         Already have an account?

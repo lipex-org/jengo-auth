@@ -3,9 +3,14 @@
 
   export let error: string = '';
   export let message: string = '';
+  export let social_providers: Array<{ id: string; name: string; url: string }> = [];
+  export let data: any = {};
 
   $: flash = $page?.props?.flash || {};
   $: pageErrors = $page?.props?.errors || {};
+  $: pageData = $page?.props?.data || {};
+
+  $: activeSocialProviders = (social_providers && social_providers.length > 0) ? social_providers : (data?.social_providers || pageData?.social_providers || []);
   $: activeError = error || flash.error || pageErrors.error;
   $: activeMessage = message || flash.message || flash.success;
 
@@ -108,6 +113,27 @@
         {$form.processing ? 'Creating account...' : 'Create Account'}
       </button>
     </form>
+
+    {#if activeSocialProviders && activeSocialProviders.length > 0}
+      <div class="mt-6">
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-slate-800"></div>
+          <span class="flex-shrink mx-4 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Or register with</span>
+          <div class="flex-grow border-t border-slate-800"></div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          {#each activeSocialProviders as provider}
+            <a
+              href={provider.url}
+              class="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 transition duration-150"
+            >
+              Register with {provider.name}
+            </a>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <div class="mt-6 text-center text-xs text-slate-400">
       Already have an account?

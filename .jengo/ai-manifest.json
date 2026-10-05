@@ -22,6 +22,11 @@
       "name": "twoFactor",
       "class": "Jengo\\Auth\\TwoFactor\\TwoFactorManager",
       "description": "Multi-factor authentication manager orchestrating enrollment, verification, and driver lifecycle."
+    },
+    {
+      "name": "social",
+      "class": "Jengo\\Auth\\Social\\SocialManager",
+      "description": "OAuth2 social sign-in manager handling driver instantiation, OAuth flow redirections, user provisioning, and verified email auto-linking."
     }
   ],
   "guards": [
@@ -112,6 +117,10 @@
     {
       "class": "Jengo\\Auth\\Forms\\SudoVerifyFormHandler",
       "description": "FormHandler for verifying proof and activating Sudo mode."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\SetPasswordFormHandler",
+      "description": "FormHandler for validating and setting new passwords for social/OAuth users."
     }
   ],
   "response_handling": {
@@ -206,6 +215,14 @@
     {
       "class": "Jengo\\Auth\\Controllers\\TokenController",
       "description": "Personal access token lifecycle management controller."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\OAuthController",
+      "description": "Social authentication controller handling OAuth provider redirect and callback token exchanges."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\SetPasswordController",
+      "description": "Password provisioning controller enabling social-registered users to establish traditional credentials."
     }
   ],
   "rate_limiting": {
@@ -274,6 +291,11 @@
       "description": "Access the global Multi-Factor Authentication manager."
     },
     {
+      "name": "social_auth",
+      "signature": "social_auth(): Jengo\\Auth\\Social\\SocialManager",
+      "description": "Access the global OAuth2 / Social Authentication manager."
+    },
+    {
       "name": "vima",
       "signature": "vima(): Vima\\Core\\VimaManager",
       "description": "Access the global Vima authorization manager."
@@ -296,6 +318,6 @@
   ],
   "routing": {
     "class": "Jengo\\Auth\\Support\\RouteRegistrar",
-    "description": "Advanced route publishing with support for core, action, magicLink, twoFactor, sudo, and tokens feature suites, prefix/grouping, paths customization, only/except flow filtering, controller overrides, route name prefixes, and route filters."
+    "description": "Advanced route publishing with support for core, action, magicLink, twoFactor, sudo, tokens, social, and setPassword feature suites, prefix/grouping, paths customization, only/except flow filtering, controller overrides, route name prefixes, and route filters."
   }
 }

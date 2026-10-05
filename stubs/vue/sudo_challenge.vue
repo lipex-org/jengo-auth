@@ -41,12 +41,12 @@ const selectTab = (tab: 'password' | 'totp' | 'passkey' | 'recovery_code') => {
 };
 
 const submit = () => {
-  form.post('/auth/sudo/verify');
+  form.post('/sudo/verify');
 };
 
 const handlePasskeyAuth = async () => {
   try {
-    const res = await fetch('/auth/sudo/challenge', {
+    const res = await fetch('/sudo/challenge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ factor: 'passkey' }),
@@ -75,7 +75,7 @@ const handlePasskeyAuth = async () => {
       signature: btoa(String.fromCharCode(...new Uint8Array(cred.response.signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
     };
 
-    router.post('/auth/sudo/verify', { factor: 'passkey', proof });
+    router.post('/sudo/verify', { factor: 'passkey', proof });
   } catch (err: any) {
     alert('Passkey error: ' + err.message);
   }

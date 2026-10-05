@@ -103,6 +103,8 @@ class InertiaModifier implements ResponseModifierInterface
             'sudo.view', 'auth.sudo'                     => $views['sudo'] ?? null,
             'two_factor.view', 'two_factor.index'        => $views['two_factor_settings'] ?? null,
             'tokens.list', 'tokens.index', 'tokens.view' => $views['tokens'] ?? null,
+            'set_password.view'                          => $views['set_password'] ?? null,
+            'identities.view', 'identities.index'        => $views['identities'] ?? null,
             default                                      => $views[$action] ?? null,
         };
     }

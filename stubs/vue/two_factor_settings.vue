@@ -57,7 +57,7 @@ watch(
 const startTotp = () => {
   isProcessing.value = true;
   router.post(
-    '/user/two-factor/enroll/start',
+    '/two-factor/enroll/start',
     { factor: 'totp' },
     {
       preserveScroll: true,
@@ -71,7 +71,7 @@ const startTotp = () => {
 const confirmTotp = () => {
   if (!totpCode.value) return;
   router.post(
-    '/user/two-factor/enroll/confirm',
+    '/two-factor/enroll/confirm',
     { factor: 'totp', code: totpCode.value },
     {
       preserveScroll: true,
@@ -89,7 +89,7 @@ const startPasskey = () => {
 
   isProcessing.value = true;
   router.post(
-    '/user/two-factor/enroll/start',
+    '/two-factor/enroll/start',
     { factor: 'passkey', options: { name } },
     {
       preserveScroll: true,
@@ -114,7 +114,7 @@ const startPasskey = () => {
           };
 
           router.post(
-            '/user/two-factor/enroll/confirm',
+            '/two-factor/enroll/confirm',
             { factor: 'passkey', proof, metadata: { name } },
             {
               preserveScroll: true,
@@ -138,7 +138,7 @@ const startPasskey = () => {
 const startRecoveryCodes = () => {
   if (!confirm('Generating new recovery codes will invalidate prior codes. Continue?')) return;
   router.post(
-    '/user/two-factor/enroll/start',
+    '/two-factor/enroll/start',
     { factor: 'recovery_code' },
     {
       preserveScroll: true,
@@ -149,7 +149,7 @@ const startRecoveryCodes = () => {
 const unenroll = (factor: string) => {
   if (!confirm(`Are you sure you want to remove ${factor.toUpperCase()}?`)) return;
   router.post(
-    '/user/two-factor/unenroll',
+    '/two-factor/unenroll',
     { factor },
     {
       preserveScroll: true,

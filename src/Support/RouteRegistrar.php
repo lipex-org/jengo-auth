@@ -7,18 +7,56 @@ namespace Jengo\Auth\Support;
 use CodeIgniter\Router\RouteCollection;
 use Jengo\Auth\Controllers\ActionController;
 use Jengo\Auth\Controllers\ForgotPasswordController;
+use Jengo\Auth\Controllers\IdentityController;
 use Jengo\Auth\Controllers\LoginController;
 use Jengo\Auth\Controllers\MagicLinkController;
+use Jengo\Auth\Controllers\OAuthController;
 use Jengo\Auth\Controllers\RegisterController;
 use Jengo\Auth\Controllers\ResetPasswordController;
+use Jengo\Auth\Controllers\SetPasswordController;
+use Jengo\Auth\Controllers\SudoController;
 use Jengo\Auth\Controllers\TokenController;
+use Jengo\Auth\Controllers\TwoFactorSettingsController;
 
 class RouteRegistrar
 {
     /**
+     * Stores default global configuration options (e.g. prefix, group, filters) configured via RouteRegistrar::configure().
+     */
+    protected static array $globalOptions = [];
+
+    /**
      * Stores the last active route registration options for introspection.
      */
     protected static array $lastOptions = [];
+
+    /**
+     * Stores the list of explicitly published flow names across route registrations.
+     */
+    protected static array $publishedFlows = [];
+
+    /**
+     * Configure default global options (e.g. prefix, group, groupOptions, filters, paths, controllers) for subsequent route registrations.
+     */
+    public static function configure(array $options): void
+    {
+        static::$globalOptions = array_replace_recursive(static::$globalOptions, $options);
+    } 
+
+    /**
+     * Reset or retrieve configured global options.
+     */
+    public static function getGlobalOptions(): array
+    {
+        return static::$globalOptions;
+    }
+
+    public static function resetGlobalOptions(): void
+    {
+        static::$globalOptions = [];
+        static::$lastOptions = [];
+        static::$publishedFlows = [];
+    }
 
     /**
      * Get the options passed to the route registrar.
@@ -26,6 +64,64 @@ class RouteRegistrar
     public static function getOptions(): array
     {
         return static::$lastOptions;
+    }
+
+    /**
+     * Check if a specific auth flow is published and enabled in the current route registration.
+     */
+    public static function isFlowPublished(string $flow): bool
+    {
+        if (in_array($flow, static::$publishedFlows, true)) {
+            return true;
+        }
+
+        $options = static::$lastOptions;
+        $only = (array) ($options['only'] ?? []);
+        $except = (array) ($options['except'] ?? []);
+        $config = config('Auth');
+
+        $configFlag = match ($flow) {
+            'login'           => (bool) ($config->allowLogin ?? true),
+            'register'        => (bool) ($config->allowRegistration ?? true),
+            'password-reset'  => (bool) ($config->allowPasswordReset ?? true),
+            'magic-link'      => (bool) ($config->allowMagicLink ?? true),
+            'tokens'          => (bool) ($config->allowTokens ?? true),
+            'social'          => (bool) ($config->allowSocial ?? ($config->social['enabled'] ?? true)),
+            'identities'      => (bool) ($config->allowSocial ?? ($config->social['enabled'] ?? true)),
+            'action', 'sudo', 'two-factor', 'set-password' => true,
+            default           => true,
+        };
+
+        return static::isFlowEnabled($flow, $only, $except, $configFlag);
+    }
+
+    /**
+     * Get an associative array of all known flows and their publication status [flow => bool].
+     *
+     * @return array<string, bool>
+     */
+    public static function getPublishedFlows(): array
+    {
+        $flows = [
+            'login',
+            'register',
+            'password-reset',
+            'magic-link',
+            'action',
+            'sudo',
+            'two-factor',
+            'tokens',
+            'social',
+            'set-password',
+            'identities',
+        ];
+
+        $result = [];
+        foreach ($flows as $flow) {
+            $result[$flow] = static::isFlowPublished($flow);
+        }
+
+        return $result;
     }
 
     /**
@@ -44,29 +140,43 @@ class RouteRegistrar
      */
     public static function routes(RouteCollection $routes, array $options = []): void
     {
-        static::$lastOptions = $options;
+        $mergedOptions = array_merge(static::$globalOptions, $options);
+        if (isset(static::$globalOptions['paths'], $options['paths'])) {
+            $mergedOptions['paths'] = array_merge(static::$globalOptions['paths'], $options['paths']);
+        }
+        if (isset(static::$globalOptions['controllers'], $options['controllers'])) {
+            $mergedOptions['controllers'] = array_merge(static::$globalOptions['controllers'], $options['controllers']);
+        }
+        if (isset(static::$globalOptions['filters'], $options['filters'])) {
+            $mergedOptions['filters'] = array_merge(static::$globalOptions['filters'], $options['filters']);
+        }
+        if (isset(static::$globalOptions['groupOptions'], $options['groupOptions'])) {
+            $mergedOptions['groupOptions'] = array_merge(static::$globalOptions['groupOptions'], $options['groupOptions']);
+        }
+
+        static::$lastOptions = $mergedOptions;
 
         $config = config('Auth');
-        $prefix = (string) ($options['prefix'] ?? $options['group'] ?? '');
+        $prefix = (string) ($mergedOptions['prefix'] ?? $mergedOptions['group'] ?? '');
         $prefix = trim($prefix, '/');
 
         if ($prefix !== '') {
-            $groupOptions = $options['groupOptions'] ?? [];
-            if (isset($options['filter']) && ! isset($groupOptions['filter'])) {
-                $groupOptions['filter'] = $options['filter'];
+            $groupOptions = $mergedOptions['groupOptions'] ?? [];
+            if (isset($mergedOptions['filter']) && ! isset($groupOptions['filter'])) {
+                $groupOptions['filter'] = $mergedOptions['filter'];
             }
 
             if (! empty($groupOptions)) {
-                $routes->group($prefix, $groupOptions, static function (RouteCollection $groupedRoutes) use ($options, $config) {
-                    static::registerDefinitions($groupedRoutes, $options, $config);
+                $routes->group($prefix, $groupOptions, static function (RouteCollection $groupedRoutes) use ($mergedOptions, $config) {
+                    static::registerDefinitions($groupedRoutes, $mergedOptions, $config);
                 });
             } else {
-                $routes->group($prefix, static function (RouteCollection $groupedRoutes) use ($options, $config) {
-                    static::registerDefinitions($groupedRoutes, $options, $config);
+                $routes->group($prefix, static function (RouteCollection $groupedRoutes) use ($mergedOptions, $config) {
+                    static::registerDefinitions($groupedRoutes, $mergedOptions, $config);
                 });
             }
         } else {
-            static::registerDefinitions($routes, $options, $config);
+            static::registerDefinitions($routes, $mergedOptions, $config);
         }
     }
 
@@ -125,6 +235,34 @@ class RouteRegistrar
     }
 
     /**
+     * Publish Social / OAuth authentication routes (redirect & callback).
+     */
+    public static function social(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['social'];
+        $options['allowSocial'] = true;
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish password provisioning / set password routes.
+     */
+    public static function setPassword(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['set-password'];
+        static::routes($routes, $options);
+    }
+
+    /**
+     * Publish user identity management & unlinking routes.
+     */
+    public static function identities(RouteCollection $routes, array $options = []): void
+    {
+        $options['only'] = ['identities'];
+        static::routes($routes, $options);
+    }
+
+    /**
      * Publish all authentication features and endpoints.
      */
     public static function all(RouteCollection $routes, array $options = []): void
@@ -149,10 +287,13 @@ class RouteRegistrar
             'forgot-password' => 'forgot-password',
             'reset-password'  => 'reset-password',
             'magic-link'      => 'magic-link',
-            'action'          => 'auth/action',
+            'action'          => 'action',
             'tokens'          => 'tokens',
-            'sudo'            => 'auth/sudo',
-            'two-factor'      => 'user/two-factor',
+            'sudo'            => 'sudo',
+            'two-factor'      => 'two-factor',
+            'social'          => 'oauth',
+            'set-password'    => 'set-password',
+            'identities'      => 'identities',
         ];
         $optionPaths = (array) ($options['paths'] ?? []);
         $paths = array_merge($defaultPaths, $optionPaths);
@@ -165,8 +306,11 @@ class RouteRegistrar
             'magic-link'      => MagicLinkController::class,
             'action'          => ActionController::class,
             'tokens'          => TokenController::class,
-            'sudo'            => \Jengo\Auth\Controllers\SudoController::class,
-            'two-factor'      => \Jengo\Auth\Controllers\TwoFactorSettingsController::class,
+            'sudo'            => SudoController::class,
+            'two-factor'      => TwoFactorSettingsController::class,
+            'social'          => OAuthController::class,
+            'set-password'    => SetPasswordController::class,
+            'identities'      => IdentityController::class,
         ];
         $optionControllers = (array) ($options['controllers'] ?? []);
         $controllers = array_merge($defaultControllers, $optionControllers);
@@ -176,6 +320,7 @@ class RouteRegistrar
 
         // 1. Login & Logout
         if (static::isFlowEnabled('login', $only, $except, (bool) ($config->allowLogin ?? true))) {
+            static::$publishedFlows[] = 'login';
             $loginCtrl = $controllers['login'] ?? LoginController::class;
             $pathLogin = trim((string) ($paths['login'] ?? 'login'), '/');
             $pathLogout = trim((string) ($paths['logout'] ?? 'logout'), '/');
@@ -207,6 +352,7 @@ class RouteRegistrar
 
         // 2. Registration
         if (static::isFlowEnabled('register', $only, $except, (bool) ($config->allowRegistration ?? true))) {
+            static::$publishedFlows[] = 'register';
             $regCtrl = $controllers['register'] ?? RegisterController::class;
             $pathRegister = trim((string) ($paths['register'] ?? 'register'), '/');
 
@@ -226,6 +372,7 @@ class RouteRegistrar
 
         // 3. Password Reset
         if (static::isFlowEnabled('password-reset', $only, $except, (bool) ($config->allowPasswordReset ?? true))) {
+            static::$publishedFlows[] = 'password-reset';
             $forgotCtrl = $controllers['forgot-password'] ?? $controllers['password-reset'] ?? ForgotPasswordController::class;
             $resetCtrl = $controllers['reset-password'] ?? $controllers['password-reset'] ?? ResetPasswordController::class;
 
@@ -241,6 +388,7 @@ class RouteRegistrar
 
         // 4. Magic Link
         if (static::isFlowEnabled('magic-link', $only, $except, (bool) ($config->allowMagicLink ?? true))) {
+            static::$publishedFlows[] = 'magic-link';
             $magicCtrl = $controllers['magic-link'] ?? MagicLinkController::class;
             $pathMagic = trim((string) ($paths['magic-link'] ?? 'magic-link'), '/');
 
@@ -252,6 +400,7 @@ class RouteRegistrar
 
         // 5. Auth Action / MFA
         if (static::isFlowEnabled('action', $only, $except, true)) {
+            static::$publishedFlows[] = 'action';
             $actionCtrl = $controllers['action'] ?? ActionController::class;
             $pathAction = trim((string) ($paths['action'] ?? 'auth/action'), '/');
 
@@ -264,7 +413,8 @@ class RouteRegistrar
 
         // 6. Sudo Mode
         if (static::isFlowEnabled('sudo', $only, $except, true)) {
-            $sudoCtrl = $controllers['sudo'] ?? \Jengo\Auth\Controllers\SudoController::class;
+            static::$publishedFlows[] = 'sudo';
+            $sudoCtrl = $controllers['sudo'] ?? SudoController::class;
             $pathSudo = trim((string) ($paths['sudo'] ?? 'auth/sudo'), '/');
 
             $routes->get($pathSudo, [$sudoCtrl, 'index'], ['as' => 'auth.sudo']);
@@ -275,7 +425,8 @@ class RouteRegistrar
 
         // 7. Two-Factor Settings & Enrollment
         if (static::isFlowEnabled('two-factor', $only, $except, true)) {
-            $twoFactorCtrl = $controllers['two-factor'] ?? \Jengo\Auth\Controllers\TwoFactorSettingsController::class;
+            static::$publishedFlows[] = 'two-factor';
+            $twoFactorCtrl = $controllers['two-factor'] ?? TwoFactorSettingsController::class;
             $pathTwoFactor = trim((string) ($paths['two-factor'] ?? 'user/two-factor'), '/');
 
             $routes->get($pathTwoFactor, [$twoFactorCtrl, 'index'], ['as' => 'two-factor.index']);
@@ -286,6 +437,7 @@ class RouteRegistrar
 
         // 8. Personal Access Tokens
         if (static::isFlowEnabled('tokens', $only, $except, (bool) ($config->allowTokens ?? true))) {
+            static::$publishedFlows[] = 'tokens';
             $tokenCtrl = $controllers['tokens'] ?? TokenController::class;
             $pathTokens = trim((string) ($paths['tokens'] ?? 'tokens'), '/');
 
@@ -294,6 +446,40 @@ class RouteRegistrar
             $routes->post($pathTokens . '/create', [$tokenCtrl, 'create'], ['as' => 'tokens.create.named']);
             $routes->delete($pathTokens . '/(:segment)', [$tokenCtrl, 'revoke'], ['as' => 'tokens.revoke']);
             $routes->post($pathTokens . '/revoke/(:segment)', [$tokenCtrl, 'revoke'], ['as' => 'tokens.revoke.post']);
+        }
+
+        // 9. Social / OAuth Authentication
+        $socialEnabled = (bool) ($config->allowSocial ?? ($config->social['enabled'] ?? true));
+        if (static::isFlowEnabled('social', $only, $except, $socialEnabled)) {
+            static::$publishedFlows[] = 'social';
+            $socialCtrl = $controllers['social'] ?? OAuthController::class;
+            $pathSocial = trim((string) ($paths['social'] ?? 'oauth'), '/');
+
+            $routes->get($pathSocial . '/(:segment)', [$socialCtrl, 'redirect'], ['as' => 'auth.oauth.redirect']);
+            $routes->get($pathSocial . '/callback/(:segment)', [$socialCtrl, 'callback'], ['as' => 'auth.oauth.callback']);
+        }
+
+        // 10. Password Provisioning / Set Password
+        if (static::isFlowEnabled('set-password', $only, $except, true)) {
+            static::$publishedFlows[] = 'set-password';
+            $setPasswordCtrl = $controllers['set-password'] ?? SetPasswordController::class;
+            $pathSetPassword = trim((string) ($paths['set-password'] ?? 'set-password'), '/');
+
+            $routes->get($pathSetPassword, [$setPasswordCtrl, 'showSetPassword'], ['as' => 'auth.password.set.view']);
+            $routes->post($pathSetPassword, [$setPasswordCtrl, 'attemptSetPassword'], ['as' => 'auth.password.set']);
+        }
+
+        // 11. User Identity Management & Unlinking
+        $identitiesEnabled = (bool) ($config->allowSocial ?? ($config->social['enabled'] ?? true));
+        if (static::isFlowEnabled('identities', $only, $except, $identitiesEnabled)) {
+            static::$publishedFlows[] = 'identities';
+            $identityCtrl = $controllers['identities'] ?? IdentityController::class;
+            $pathIdentities = trim((string) ($paths['identities'] ?? 'identities'), '/');
+
+            $routes->get($pathIdentities, [$identityCtrl, 'showIdentities'], ['as' => 'identities.index']);
+            $routes->post($pathIdentities . '/unlink/(:segment)', [$identityCtrl, 'unlinkIdentity'], ['as' => 'identities.unlink']);
+            $routes->post($pathIdentities . '/unlink', [$identityCtrl, 'unlinkIdentity'], ['as' => 'identities.unlink.post']);
+            $routes->delete($pathIdentities . '/(:segment)', [$identityCtrl, 'unlinkIdentity'], ['as' => 'identities.unlink.delete']);
         }
     }
 

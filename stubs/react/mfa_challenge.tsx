@@ -21,18 +21,18 @@ export default function MfaChallenge({ error: initialError, message: initialMess
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    post('/auth/action/handle');
+    post('/action/handle');
   };
 
   const handleResend = () => {
-    router.post('/auth/action/challenge', {}, {
+    router.post('/action/challenge', {}, {
       preserveScroll: true,
       preserveState: true,
     });
   };
 
   const handleCancel = () => {
-    router.post('/auth/action/cancel');
+    router.post('/action/cancel');
   };
 
   return (

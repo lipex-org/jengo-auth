@@ -1,58 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Two-Factor Verification - <?= esc(config('Auth')->branding['name'] ?? 'Jengo Auth') ?></title>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); width: 100%; max-width: 400px; text-align: center; }
-        .input-group { margin: 1.5rem 0; }
-        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
-        input[type="text"] { width: 100%; padding: 0.75rem; font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 0.625rem; background: #3b82f6; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
-        button:hover { background: #2563eb; }
-        .info { color: #64748b; font-size: 0.875rem; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2>Two-Factor Verification</h2>
-        <p class="info">Please enter the verification code sent to your registered contact.</p>
+<?php
+$title = 'Two-Factor Verification';
+$heading = 'Two-Factor Verification';
+$subheading = 'Enter the 6-digit verification code sent to your registered contact.';
+$layoutMode = 'auth-card';
+$this->extend('Jengo\Auth\Views\layout');
+?>
 
-        <?php if (session()->getFlashdata('message')): ?>
-            <div style="background: #dcfce7; color: #166534; padding: 0.75rem; border-radius: 4px; font-size: 0.875rem; margin-bottom: 1rem;">
-                <?= esc(session()->getFlashdata('message')) ?>
-            </div>
-        <?php endif; ?>
+<?= $this->section('content') ?>
+<form action="<?= url_to('auth.action.handle') ?>" method="post" class="space-y-4">
+    <?= csrf_field() ?>
 
-        <?php if (session()->getFlashdata('error')): ?>
-            <div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: 4px; font-size: 0.875rem; margin-bottom: 1rem;">
-                <?= esc(session()->getFlashdata('error')) ?>
-            </div>
-        <?php endif; ?>
-
-        <form action="<?= url_to('auth.action.handle') ?>" method="post">
-            <?= csrf_field() ?>
-            <div class="input-group">
-                <label for="code">Security Code</label>
-                <input type="text" id="code" name="code" maxlength="6" pattern="[0-9]{6}" required autofocus placeholder="123456">
-            </div>
-            <button type="submit">Verify & Continue</button>
-        </form>
-
-        <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem;">
-            <form action="<?= url_to('auth.action.challenge') ?>" method="post" style="display: inline;">
-                <?= csrf_field() ?>
-                <button type="submit" style="background: none; border: none; color: #2563eb; padding: 0; font-size: 0.875rem; font-weight: normal; width: auto; cursor: pointer;">
-                    Resend Code
-                </button>
-            </form>
-
-            <a href="<?= url_to('auth.action.cancel') ?>" style="color: #64748b; text-decoration: none;">
-                Cancel
-            </a>
-        </div>
+    <div>
+        <label for="code" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 text-center">
+            Security Code
+        </label>
+        <input 
+            type="text" 
+            id="code" 
+            name="code" 
+            maxlength="6" 
+            pattern="[0-9]{6}" 
+            required 
+            autofocus 
+            placeholder="123456"
+            class="w-full text-center text-2xl tracking-[0.5em] px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition font-mono"
+        >
     </div>
-</body>
-</html>
+
+    <button 
+        type="submit" 
+        class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-500/20 transition duration-150 cursor-pointer"
+    >
+        Verify & Continue
+    </button>
+</form>
+
+<div class="flex items-center justify-between pt-2 text-xs">
+    <form action="<?= url_to('auth.action.challenge') ?>" method="post" class="inline m-0 p-0">
+        <?= csrf_field() ?>
+        <button type="submit" class="text-blue-400 hover:text-blue-300 font-semibold cursor-pointer bg-transparent border-none p-0">
+            Resend Code
+        </button>
+    </form>
+
+    <a href="<?= url_to('auth.action.cancel') ?>" class="text-slate-400 hover:text-slate-300 transition">
+        Cancel
+    </a>
+</div>
+<?= $this->endSection() ?>

@@ -1,17 +1,35 @@
 import React from 'react';
 import { useForm, usePage, Link } from '@inertiajs/react';
 
+interface SocialProvider {
+  id: string;
+  name: string;
+  url: string;
+}
+
 interface RegisterProps {
   errors?: Record<string, string>;
   message?: string;
   error?: string;
+  social_providers?: SocialProvider[];
+  data?: {
+    social_providers?: SocialProvider[];
+  };
   flash?: Record<string, string>;
 }
 
-export default function Register({ error: initialError, message: initialMessage }: RegisterProps) {
+export default function Register({
+  error: initialError,
+  message: initialMessage,
+  social_providers: propSocialProviders,
+  data: propData,
+}: RegisterProps) {
   const { props } = usePage<any>();
   const flash = props.flash || {};
   const pageErrors = props.errors || {};
+  const pageData = props.data || {};
+
+  const socialProviders: SocialProvider[] = propSocialProviders ?? propData?.social_providers ?? pageData.social_providers ?? [];
 
   const error = initialError || flash.error || pageErrors.error;
   const message = initialMessage || flash.message || flash.success;
@@ -108,6 +126,28 @@ export default function Register({ error: initialError, message: initialMessage 
             {processing ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
+
+        {socialProviders.length > 0 && (
+          <div className="mt-6">
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-slate-800"></div>
+              <span className="flex-shrink mx-4 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Or register with</span>
+              <div className="flex-grow border-t border-slate-800"></div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 mt-2">
+              {socialProviders.map((provider) => (
+                <a
+                  key={provider.id}
+                  href={provider.url}
+                  className="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 transition duration-150"
+                >
+                  Register with {provider.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 text-center text-xs text-slate-400">
           Already have an account?{' '}

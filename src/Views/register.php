@@ -1,55 +1,106 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - <?= esc(config('Auth')->branding['name'] ?? 'Jengo Auth') ?></title>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); width: 100%; max-width: 400px; }
-        .input-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
-        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 0.625rem; background: #3b82f6; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
-        button:hover { background: #2563eb; }
-        .error { color: #ef4444; font-size: 0.875rem; margin-bottom: 1rem; }
-        .links { margin-top: 1rem; text-align: center; font-size: 0.875rem; }
-        a { color: #3b82f6; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2>Create Account</h2>
-        <?php if (session()->getFlashdata('errors')): ?>
-            <div class="error">
-                <?php foreach (session()->getFlashdata('errors') as $err): ?>
-                    <div><?= esc($err) ?></div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-        <form action="<?= url_to('register.attempt') ?>" method="post">
-            <?= csrf_field() ?>
-            <div class="input-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" value="<?= old('username') ?>" required autofocus>
-            </div>
-            <div class="input-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" value="<?= old('email') ?>" required>
-            </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="input-group">
-                <label for="password_confirm">Confirm Password</label>
-                <input type="password" id="password_confirm" name="password_confirm" required>
-            </div>
-            <button type="submit">Sign Up</button>
-        </form>
-        <div class="links">
-            <a href="<?= url_to('login') ?>">Already have an account? Log in</a>
+<?php
+$title = 'Register';
+$heading = 'Create an account';
+$subheading = 'Enter your details below to get started.';
+$layoutMode = 'auth-card';
+$this->extend('Jengo\Auth\Views\layout');
+?>
+
+<?= $this->section('content') ?>
+<form action="<?= url_to('register.attempt') ?>" method="post" class="space-y-4">
+    <?= csrf_field() ?>
+
+    <div>
+        <label for="username" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Username
+        </label>
+        <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            value="<?= old('username') ?>" 
+            required 
+            autofocus
+            placeholder="johndoe"
+            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
+        >
+    </div>
+
+    <div>
+        <label for="email" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Email Address
+        </label>
+        <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            value="<?= old('email') ?>" 
+            required 
+            placeholder="you@example.com"
+            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
+        >
+    </div>
+
+    <div>
+        <label for="password" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Password
+        </label>
+        <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required
+            placeholder="••••••••"
+            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
+        >
+    </div>
+
+    <div>
+        <label for="password_confirm" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Confirm Password
+        </label>
+        <input 
+            type="password" 
+            id="password_confirm" 
+            name="password_confirm" 
+            required
+            placeholder="••••••••"
+            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
+        >
+    </div>
+
+    <button 
+        type="submit" 
+        class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-500/20 transition duration-150 cursor-pointer"
+    >
+        Create Account
+    </button>
+</form>
+
+<?php if (!empty($social_providers)): ?>
+    <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-800"></div>
+        </div>
+        <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-slate-900 px-3 text-slate-500 font-medium tracking-wider">Or sign up with</span>
         </div>
     </div>
-</body>
-</html>
+
+    <div class="grid grid-cols-1 gap-2.5">
+        <?php foreach ($social_providers as $provider): ?>
+            <a 
+                href="<?= esc($provider['url']) ?>" 
+                class="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 transition duration-150"
+            >
+                <span>Sign up with <?= esc($provider['name']) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('footer') ?>
+Already have an account? 
+<a href="<?= url_to('login') ?>" class="font-semibold text-blue-400 hover:text-blue-300 transition">Sign in</a>
+<?= $this->endSection() ?>

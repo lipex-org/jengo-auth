@@ -1,17 +1,43 @@
 import React from 'react';
 import { useForm, usePage, Link } from '@inertiajs/react';
 
+interface SocialProvider {
+  id: string;
+  name: string;
+  url: string;
+}
+
 interface LoginProps {
   errors?: Record<string, string>;
   message?: string;
   error?: string;
+  allow_magic_link?: boolean;
+  can_reset_password?: boolean;
+  social_providers?: SocialProvider[];
+  data?: {
+    allow_magic_link?: boolean;
+    can_reset_password?: boolean;
+    social_providers?: SocialProvider[];
+  };
   flash?: Record<string, string>;
 }
 
-export default function Login({ error: initialError, message: initialMessage }: LoginProps) {
+export default function Login({
+  error: initialError,
+  message: initialMessage,
+  allow_magic_link: propMagicLink,
+  can_reset_password: propResetPass,
+  social_providers: propSocialProviders,
+  data: propData,
+}: LoginProps) {
   const { props } = usePage<any>();
   const flash = props.flash || {};
   const pageErrors = props.errors || {};
+  const pageData = props.data || {};
+
+  const allowMagicLink = propMagicLink ?? propData?.allow_magic_link ?? pageData.allow_magic_link ?? false;
+  const canResetPassword = propResetPass ?? propData?.can_reset_password ?? pageData.can_reset_password ?? true;
+  const socialProviders: SocialProvider[] = propSocialProviders ?? propData?.social_providers ?? pageData.social_providers ?? [];
 
   const error = initialError || flash.error || pageErrors.credentials || pageErrors.error;
   const message = initialMessage || flash.message || flash.success;
@@ -83,9 +109,18 @@ export default function Login({ error: initialError, message: initialMessage }: 
               />
               Remember me
             </label>
-            <Link href="/forgot-password" className="text-blue-400 hover:text-blue-300">
-              Forgot password?
-            </Link>
+            <div className="flex items-center gap-3">
+              {allowMagicLink && (
+                <Link href="/magic-link" className="text-blue-400 hover:text-blue-300">
+                  Magic link
+                </Link>
+              )}
+              {canResetPassword && (
+                <Link href="/forgot-password" className="text-blue-400 hover:text-blue-300">
+                  Forgot password?
+                </Link>
+              )}
+            </div>
           </div>
 
           <button
@@ -96,6 +131,28 @@ export default function Login({ error: initialError, message: initialMessage }: 
             {processing ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        {socialProviders.length > 0 && (
+          <div className="mt-6">
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-slate-800"></div>
+              <span className="flex-shrink mx-4 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Or continue with</span>
+              <div className="flex-grow border-t border-slate-800"></div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 mt-2">
+              {socialProviders.map((provider) => (
+                <a
+                  key={provider.id}
+                  href={provider.url}
+                  className="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 transition duration-150"
+                >
+                  Sign in with {provider.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 text-center text-xs text-slate-400">
           Don't have an account?{' '}

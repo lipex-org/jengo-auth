@@ -510,6 +510,30 @@ class AuthManager
         RouteRegistrar::tokens($routes, $options);
     }
 
+    /**
+     * Publish Social / OAuth authentication routes (redirect & callback).
+     */
+    public function socialRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::social($routes, $options);
+    }
+
+    /**
+     * Publish password provisioning / set password routes.
+     */
+    public function setPasswordRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::setPassword($routes, $options);
+    }
+
+    /**
+     * Publish user identity management & unlinking routes.
+     */
+    public function identityRoutes(RouteCollection $routes, array $options = []): void
+    {
+        RouteRegistrar::identities($routes, $options);
+    }
+
 
     protected ?ResponseHandler $responseHandler = null;
 
@@ -597,6 +621,11 @@ class AuthManager
     public function sudo(): \Jengo\Auth\Sudo\SudoManager
     {
         return Services::sudo();
+    }
+
+    public function social(): \Jengo\Auth\Social\SocialManager
+    {
+        return Services::social();
     }
 }
 

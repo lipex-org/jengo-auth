@@ -59,12 +59,53 @@ class User extends BaseEntity
      */
     public function getEmail(): ?string
     {
-        if (isset($this->attributes['email'])) {
+        if (isset($this->attributes['email']) && !empty($this->attributes['email'])) {
             return (string) $this->attributes['email'];
         }
+        if (isset($this->email) && !empty($this->email)) {
+            return (string) $this->email;
+        }
 
-        $identity = auth()->getUserIdentityModel()->where('user_id', $this->id)->where('type', 'email_password')->first();
-        return $identity ? $identity->name : null;
+        $userId = $this->getId();
+        if (empty($userId)) {
+            return null;
+        }
+
+        $identity = auth()->getUserIdentityModel()->where('user_id', $userId)->where('type', 'email_password')->first();
+        if ($identity) {
+            return $identity->name;
+        }
+
+        // Check if there is a social identity with extra.email
+        $socialIdentity = auth()->getUserIdentityModel()->where('user_id', $userId)->like('type', 'oauth_', 'after')->first();
+        if ($socialIdentity && !empty($socialIdentity->extra)) {
+            $extra = is_string($socialIdentity->extra) ? json_decode($socialIdentity->extra, true) : (array) $socialIdentity->extra;
+            if (!empty($extra['email'])) {
+                return (string) $extra['email'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the preferred username or identity name.
+     */
+    public function getUsername(): ?string
+    {
+        if (!empty($this->attributes['username'])) {
+            return (string) $this->attributes['username'];
+        }
+
+        return $this->getEmail();
+    }
+
+    /**
+     * Get user identifier with username preferred over email.
+     */
+    public function getUserIdentifier(): string
+    {
+        return $this->getUsername() ?? (string) $this->getId();
     }
 
     /**
@@ -234,6 +275,111 @@ class User extends BaseEntity
             ->orderBy('created_at', 'DESC')
             ->get()
             ->getResultArray();
+    }
+
+    /**
+     * Check if user has a password-based identity configured.
+     */
+    public function hasPassword(): bool
+    {
+        $identity = auth()->getUserIdentityModel()
+            ->where('user_id', $this->getId())
+            ->where('type', 'email_password')
+            ->first();
+
+        return $identity !== null && !empty($identity->secret);
+    }
+
+    /**
+     * Set or provision a password for this user (creating or updating the email_password identity).
+     */
+    public function setPassword(string $password, ?string $email = null): self
+    {
+        $email = $email ?? $this->getEmail() ?? $this->attributes['email'] ?? null;
+        if (empty($email)) {
+            throw new \RuntimeException('Cannot set password: user has no valid email address.');
+        }
+
+        $identityModel = auth()->getUserIdentityModel();
+        $identity = $identityModel
+            ->where('user_id', $this->getId())
+            ->where('type', 'email_password')
+            ->first();
+
+        $hashed = auth()->getHasher()->hash($password);
+
+        if ($identity !== null) {
+            $identityModel->update($identity->id, [
+                'name'         => $email,
+                'secret'       => $hashed,
+                'force_reset'  => 0,
+                'last_used_at' => date('Y-m-d H:i:s'),
+            ]);
+        } else {
+            $newIdentity = new UserIdentity([
+                'user_id'      => $this->getId(),
+                'type'         => 'email_password',
+                'name'         => $email,
+                'secret'       => $hashed,
+                'force_reset'  => 0,
+                'last_used_at' => date('Y-m-d H:i:s'),
+            ]);
+            $identityModel->insert($newIdentity);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if user has linked a specific social provider.
+     */
+    public function hasSocialIdentity(string $provider): bool
+    {
+        return auth()->getUserIdentityModel()
+            ->where('user_id', $this->getId())
+            ->where('type', 'oauth_' . $provider)
+            ->first() !== null;
+    }
+
+    /**
+     * Get all linked social identities for this user.
+     */
+    public function getSocialIdentities(): array
+    {
+        return auth()->getUserIdentityModel()
+            ->where('user_id', $this->getId())
+            ->like('type', 'oauth_', 'after')
+            ->findAll();
+    }
+
+    /**
+     * Get a formatted summary of all linked third-party / OAuth identities.
+     *
+     * @return array<array{id: int|string, provider: string, provider_user_id: string, email: ?string, name: ?string, avatar: ?string, created_at: ?string, last_used_at: ?string}>
+     */
+    public function getIdentitiesSummary(): array
+    {
+        $identities = $this->getSocialIdentities();
+        $summary = [];
+
+        foreach ($identities as $identity) {
+            $provider = str_starts_with($identity->type, 'oauth_') ? substr($identity->type, 6) : $identity->type;
+            $extra = is_string($identity->extra) ? json_decode($identity->extra, true) : (array) ($identity->extra ?? []);
+
+            $summary[] = [
+                'id'               => $identity->id,
+                'provider'         => $provider,
+                'provider_name'    => ucfirst($provider),
+                'provider_user_id' => $identity->name,
+                'email'            => $extra['email'] ?? null,
+                'name'             => $extra['name'] ?? null,
+                'avatar'           => $identity->secret2 ?? ($extra['picture'] ?? ($extra['avatar_url'] ?? null)),
+                'created_at'       => $identity->created_at ? (string) $identity->created_at : null,
+                'last_used_at'     => $identity->last_used_at ? (string) $identity->last_used_at : null,
+            ];
+        }
+
+        return $summary;
     }
 }
 

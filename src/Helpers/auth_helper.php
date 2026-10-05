@@ -86,6 +86,16 @@ if (!function_exists('two_factor')) {
     }
 }
 
+if (!function_exists('social_auth')) {
+    /**
+     * Access the Jengo SocialManager instance.
+     */
+    function social_auth(): \Jengo\Auth\Social\SocialManager
+    {
+        return Services::social();
+    }
+}
+
 if (!function_exists('auth_url')) {
     /**
      * Resolves a named auth route URL using url_to(), falling back gracefully to site_url if routes have not been registered.
@@ -109,15 +119,24 @@ if (!function_exists('auth_url')) {
             'reset-password'     => 'reset-password' . (!empty($params) ? '/' . $params[0] : ''),
             'magic-link'         => 'magic-link',
             'magic-link.verify'  => 'magic-link/verify' . (!empty($params) ? '/' . $params[0] : ''),
-            'auth.action.show'   => 'auth/action/show',
-            'auth.action.handle' => 'auth/action/handle',
-            'auth.sudo'          => 'auth/sudo',
-            'auth.sudo.verify'   => 'auth/sudo/verify',
-            'auth.sudo.exit'     => 'auth/sudo/exit',
-            'two-factor.index'   => 'user/two-factor',
+            'auth.action.show'   => 'action/show',
+            'auth.action.handle' => 'action/handle',
+            'auth.action.challenge' => 'action/challenge',
+            'auth.action.cancel' => 'action/cancel',
+            'auth.sudo'          => 'sudo',
+            'auth.sudo.challenge'=> 'sudo/challenge',
+            'auth.sudo.verify'   => 'sudo/verify',
+            'auth.sudo.exit'     => 'sudo/exit',
+            'two-factor.index'   => 'two-factor',
+            'two-factor.enroll.start' => 'two-factor/enroll/start',
+            'two-factor.enroll.confirm' => 'two-factor/enroll/confirm',
+            'two-factor.unenroll' => 'two-factor/unenroll',
             'tokens.index'       => 'tokens',
             'tokens.create'      => 'tokens/create',
             'tokens.revoke'      => 'tokens/revoke' . (!empty($params) ? '/' . $params[0] : ''),
+            'auth.oauth.redirect' => 'oauth/' . (!empty($params) ? $params[0] : ''),
+            'auth.oauth.callback' => 'oauth/callback/' . (!empty($params) ? $params[0] : ''),
+            'auth.password.set'   => 'set-password',
         ];
 
         return site_url($fallbacks[$routeName] ?? $routeName);

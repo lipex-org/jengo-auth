@@ -29,7 +29,7 @@ class AuthWorkflowAndModifiersTest extends TestCase
         $this->assertArrayHasKey('register', $registeredRoutes);
         $this->assertArrayHasKey('forgot-password', $registeredRoutes);
         $this->assertArrayHasKey('magic-link', $registeredRoutes);
-        $this->assertArrayHasKey('auth/action/show', $registeredRoutes);
+        $this->assertArrayHasKey('action/show', $registeredRoutes);
     }
 
     public function testRegistrationAndLoginFlowWithEvents(): void
@@ -506,21 +506,21 @@ class AuthWorkflowAndModifiersTest extends TestCase
         $loginCtrl->initController($request, $response, $logger);
         $loginRedirect = $loginCtrl->showLogin();
         $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $loginRedirect);
-        $this->assertStringContainsString('auth/action/show', $loginRedirect->getHeaderLine('Location'));
+        $this->assertStringContainsString('action/show', $loginRedirect->getHeaderLine('Location'));
 
         // 2. RegisterController showRegister redirects to action show
         $regCtrl = new RegisterController();
         $regCtrl->initController($request, $response, $logger);
         $regRedirect = $regCtrl->showRegister();
         $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $regRedirect);
-        $this->assertStringContainsString('auth/action/show', $regRedirect->getHeaderLine('Location'));
+        $this->assertStringContainsString('action/show', $regRedirect->getHeaderLine('Location'));
 
         // 3. ForgotPasswordController showForgot redirects to action show
         $forgotCtrl = new ForgotPasswordController();
         $forgotCtrl->initController($request, $response, $logger);
         $forgotRedirect = $forgotCtrl->showForgot();
         $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $forgotRedirect);
-        $this->assertStringContainsString('auth/action/show', $forgotRedirect->getHeaderLine('Location'));
+        $this->assertStringContainsString('action/show', $forgotRedirect->getHeaderLine('Location'));
 
         // 4. Cancel pending actions via ActionController
         $actionCtrl = new ActionController();

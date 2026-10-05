@@ -44,5 +44,14 @@ class Services extends BaseService
 
         return new \Jengo\Auth\Sudo\SudoManager(static::twoFactor());
     }
+
+    public static function social(bool $getShared = true): \Jengo\Auth\Social\SocialManager
+    {
+        if ($getShared) {
+            return static::getSharedInstance('social');
+        }
+
+        return new \Jengo\Auth\Social\SocialManager();
+    }
 }
 
