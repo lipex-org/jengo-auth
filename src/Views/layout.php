@@ -18,6 +18,7 @@ $currentUser = $user ?? (function_exists('auth') && auth()->check() ? auth()->us
 
 $pageTitle = isset($title) && $title !== '' ? $title . ' - ' . $brandName : $brandName;
 $layoutMode = $layoutMode ?? 'auth-card'; // 'auth-card' or 'dashboard'
+$containerWidth = $maxWidth ?? 'max-w-7xl';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950">
@@ -25,38 +26,18 @@ $layoutMode = $layoutMode ?? 'auth-card'; // 'auth-card' or 'dashboard'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= esc($pageTitle) ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                            950: '#172554',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    
+    <!-- Vite Asset Tags / Tailwind CSS Production & Dev Assets -->
+    <?php if (function_exists('Jengo\Base\vite_tags')): ?>
+        <?= \Jengo\Base\vite_tags() ?>
+    <?php endif; ?>
 </head>
 <body class="min-h-full bg-slate-950 text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white flex flex-col justify-between">
 
     <?php if ($layoutMode === 'dashboard'): ?>
         <!-- Dashboard / Settings Layout Header -->
         <header class="border-b border-slate-800 bg-slate-900/40 backdrop-blur sticky top-0 z-30">
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div class="<?= esc($containerWidth) ?> mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <?php if ($brandLogo): ?>
                         <img src="<?= esc($brandLogo) ?>" alt="<?= esc($brandName) ?>" class="h-8 w-auto">
@@ -85,7 +66,7 @@ $layoutMode = $layoutMode ?? 'auth-card'; // 'auth-card' or 'dashboard'
         </header>
 
         <!-- Dashboard Content Area -->
-        <main class="max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 flex-1">
+        <main class="<?= esc($containerWidth) ?> mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex-1">
             <!-- Global Flash Messages -->
             <?php if (session()->getFlashdata('message') || session()->getFlashdata('success')): ?>
                 <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">

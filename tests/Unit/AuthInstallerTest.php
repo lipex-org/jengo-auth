@@ -61,7 +61,7 @@ final class AuthInstallerTest extends TestCase
         $this->assertSame('auth', AuthInstaller::name());
         $this->assertNotEmpty(AuthInstaller::description());
         $this->assertNotEmpty(AuthInstaller::reasonForSkipping());
-        $this->assertSame([], AuthInstaller::dependencies());
+        $this->assertSame(['vite'], AuthInstaller::dependencies());
     }
 
     public function testShouldRunWhenConfigMissing(): void

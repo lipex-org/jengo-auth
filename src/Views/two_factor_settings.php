@@ -225,16 +225,24 @@ $this->extend('Jengo\Auth\Views\layout');
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ factor: 'totp' })
             });
-            const data = await res.json();
-            if (data.status === 'success') {
-                document.getElementById('totp-secret-text').innerText = data.data.secret;
-                document.getElementById('totp-uri-text').innerText = data.data.qr_uri || data.data.otpauth_uri;
-                if (data.data.qr_data_uri) {
-                    document.getElementById('totp-qr-image').src = data.data.qr_data_uri;
+            const resData = await res.json();
+            if (resData.status === 'success') {
+                // Support both nested data.data and flat data
+                const payload = resData.data?.data || resData.data || {};
+                
+                document.getElementById('totp-secret-text').innerText = payload.secret || '';
+                document.getElementById('totp-uri-text').innerText = payload.qr_uri || payload.otpauth_uri || '';
+                
+                const qrContainer = document.getElementById('totp-qr-container');
+                if (payload.qr_svg) {
+                    qrContainer.innerHTML = payload.qr_svg;
+                } else if (payload.qr_data_uri) {
+                    qrContainer.innerHTML = `<img src="${payload.qr_data_uri}" alt="TOTP QR Code" class="w-44 h-44 object-contain">`;
                 }
+                
                 document.getElementById('totp-modal').classList.remove('hidden');
             } else {
-                alert(data.message || 'Failed to initialize TOTP.');
+                alert(resData.message || 'Failed to initialize TOTP.');
             }
         } catch (err) {
             alert('Error: ' + err.message);
@@ -252,14 +260,14 @@ $this->extend('Jengo\Auth\Views\layout');
             const res = await fetch('<?= auth_url('two-factor.enroll.confirm') ?>', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ factor: 'totp', code: code })
+                body: JSON.stringify({ factor: 'totp', code: code, proof: code })
             });
-            const data = await res.json();
-            if (data.status === 'success') {
+            const resData = await res.json();
+            if (resData.status === 'success') {
                 alert('Authenticator successfully enrolled!');
                 window.location.reload();
             } else {
-                alert(data.message || 'Invalid confirmation code.');
+                alert(resData.message || 'Invalid confirmation code.');
             }
         } catch (err) {
             alert('Error: ' + err.message);
@@ -276,15 +284,19 @@ $this->extend('Jengo\Auth\Views\layout');
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ factor: 'passkey', options: { name: name } })
             });
-            const data = await res.json();
-            if (data.status !== 'success' || !data.data || !data.data.options) {
-                alert(data.message || 'Failed to start Passkey registration.');
+            const resData = await res.json();
+            const payload = resData.data?.data || resData.data || {};
+            const options = payload.options || payload;
+
+            if (resData.status !== 'success' || !options || !options.challenge) {
+                alert(resData.message || 'Failed to start Passkey registration.');
                 return;
             }
 
-            const options = data.data.options;
             options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-            options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+            if (options.user && options.user.id) {
+                options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+            }
 
             const credential = await navigator.credentials.create({ publicKey: options });
             const attestationProof = {
@@ -322,13 +334,20 @@ $this->extend('Jengo\Auth\Views\layout');
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ factor: 'recovery_code' })
             });
-            const data = await res.json();
-            if (data.status === 'success' && data.data.codes) {
-                const list = document.getElementById('recovery-codes-list');
-                list.innerHTML = data.data.codes.map(c => `<div>${c}</div>`).join('');
-                document.getElementById('recovery-modal').classList.remove('hidden');
+            const resData = await res.json();
+            if (resData.status === 'success') {
+                const payload = resData.data?.data || resData.data || {};
+                const codes = payload.codes || [];
+                
+                if (codes.length > 0) {
+                    const list = document.getElementById('recovery-codes-list');
+                    list.innerHTML = codes.map(c => `<div class="bg-slate-900 py-1.5 px-2 rounded-lg border border-slate-800">${c}</div>`).join('');
+                    document.getElementById('recovery-modal').classList.remove('hidden');
+                } else {
+                    alert('No recovery codes returned.');
+                }
             } else {
-                alert(data.message || 'Failed to generate recovery codes.');
+                alert(resData.message || 'Failed to generate recovery codes.');
             }
         } catch (err) {
             alert('Error: ' + err.message);
@@ -344,12 +363,12 @@ $this->extend('Jengo\Auth\Views\layout');
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ factor: factor })
             });
-            const data = await res.json();
-            if (data.status === 'success') {
+            const resData = await res.json();
+            if (resData.status === 'success') {
                 alert('Method removed.');
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to remove.');
+                alert(resData.message || 'Failed to remove.');
             }
         } catch (err) {
             alert('Error: ' + err.message);

@@ -27,6 +27,11 @@ class AuthInstaller extends AbstractInstaller
         return 'Jengo Auth is already configured.';
     }
 
+    public static function dependencies(): array
+    {
+        return ['vite'];
+    }
+
     public function shouldRun(): bool
     {
         $targetConfig = APPPATH . 'Config/Auth.php';

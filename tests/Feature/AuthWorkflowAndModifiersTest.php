@@ -200,9 +200,9 @@ class AuthWorkflowAndModifiersTest extends TestCase
         $this->assertSame(200, $sendResponse->getStatusCode());
         $this->assertNotNull($magicToken);
 
-        // Verify with invalid token -> 404
+        // Verify with invalid token -> 400
         $invalidResponse = $magicController->verifyLink('invalid-token-123');
-        $this->assertSame(404, $invalidResponse->getStatusCode());
+        $this->assertSame(400, $invalidResponse->getStatusCode());
 
         // Verify with valid token -> 200 & logged in
         $validResponse = $magicController->verifyLink($magicToken);

@@ -58,7 +58,7 @@ class SetPasswordController extends BaseAuthController
             statusCode: 200,
             message: 'Password created successfully. You can now use email and password to log in.',
             user: $user,
-            redirectTo: auth_redirect_url('login', '/dashboard')
+            redirectTo: auth_redirect_url('login', '/')
         );
 
         return $this->renderResponse('set_password.success', $data);

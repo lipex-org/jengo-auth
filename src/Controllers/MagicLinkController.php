@@ -97,7 +97,14 @@ class MagicLinkController extends BaseAuthController
 
         $token = $token ?? $this->request->getGet('token');
         if (! $token) {
-            return $this->notFoundResponse('magic_link.invalid');
+            $data = new AuthResponseData(
+                action: 'magic_link.invalid',
+                status: 'error',
+                statusCode: 400,
+                message: 'Invalid or expired magic link. Please request a new one.',
+                redirectTo: auth_redirect_url('login', '/')
+            );
+            return $this->renderResponse('magic_link.invalid', $data);
         }
 
         $auth = auth();
@@ -110,12 +117,26 @@ class MagicLinkController extends BaseAuthController
             ->first();
 
         if (! $identity) {
-            return $this->notFoundResponse('magic_link.invalid');
+            $data = new AuthResponseData(
+                action: 'magic_link.invalid',
+                status: 'error',
+                statusCode: 400,
+                message: 'This magic link is invalid, expired, or has already been used. Please request a new one.',
+                redirectTo: auth_redirect_url('login', '/')
+            );
+            return $this->renderResponse('magic_link.invalid', $data);
         }
 
         $user = $auth->getUserModel()->find($identity->user_id);
         if (! $user) {
-            return $this->notFoundResponse('magic_link.invalid');
+            $data = new AuthResponseData(
+                action: 'magic_link.invalid',
+                status: 'error',
+                statusCode: 400,
+                message: 'User account not found.',
+                redirectTo: auth_redirect_url('login', '/')
+            );
+            return $this->renderResponse('magic_link.invalid', $data);
         }
 
         // Delete used token
