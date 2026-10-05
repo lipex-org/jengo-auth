@@ -177,6 +177,29 @@ const unenroll = (factor: string) => {
         {{ error }}
       </div>
 
+      <!-- Sudo Mode Status Banner -->
+      <div class="p-6 rounded-2xl border bg-slate-900/60 border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-800 text-slate-400">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-base text-white">Sudo Mode (Step-Up Authentication)</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Activate temporary elevated privileges for sensitive account modifications.</p>
+          </div>
+        </div>
+        <div>
+          <Link
+            href="/sudo?redirect=/two-factor"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-xl shadow-lg shadow-blue-500/20 transition"
+          >
+            Enter Sudo Mode &rarr;
+          </Link>
+        </div>
+      </div>
+
       <div class="space-y-4">
         <!-- TOTP -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">

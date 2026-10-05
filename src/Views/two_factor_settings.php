@@ -43,37 +43,17 @@ $this->extend('Jengo\Auth\Views\layout');
         </div>
         <div class="flex items-center gap-2">
             <?php if ($isSudo): ?>
-                <form action="<?= auth_url('auth.sudo.exit') ?>" method="POST">
+                <form action="<?= auth_url('auth.sudo.exit') ?>?redirect=<?= urlencode(auth_url('two-factor.index') ?? '/two-factor') ?>" method="POST">
                     <?= csrf_field() ?>
                     <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 rounded-xl border border-slate-700 transition cursor-pointer">
                         Exit Sudo Mode
                     </button>
                 </form>
             <?php else: ?>
-                <a href="<?= auth_url('auth.sudo') ?>" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-xl shadow-lg shadow-blue-500/20 transition">
+                <a href="<?= auth_url('auth.sudo') ?>?redirect=<?= urlencode(auth_url('two-factor.index') ?? '/two-factor') ?>" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white rounded-xl shadow-lg shadow-blue-500/20 transition">
                     Enter Sudo Mode &rarr;
                 </a>
             <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Testing Section: Protected Sudo Endpoints -->
-    <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-        <h2 class="text-base font-bold text-white mb-1">Test Sudo Protected Endpoints</h2>
-        <p class="text-xs text-slate-400 mb-4">Click below to test route actions protected with the <code class="text-blue-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">#[Sudo]</code> attribute or Sudo Filter.</p>
-        <div class="flex flex-wrap gap-3">
-            <a href="<?= site_url('sudo/test-settings') ?>" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-xl border border-slate-700 flex items-center gap-2 transition">
-                <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-                Test Protected Action (2-hour Grace)
-            </a>
-            <a href="<?= site_url('sudo/test-sensitive') ?>" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-xl border border-slate-700 flex items-center gap-2 transition">
-                <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Test Force Fresh Action (Always Prompts)
-            </a>
         </div>
     </div>
 

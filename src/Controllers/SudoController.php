@@ -34,9 +34,13 @@ class SudoController extends BaseAuthController
         $user = $auth->user();
         $sudo = Services::sudo();
 
+        if ($redirectParam = $this->request->getGet('redirect')) {
+            session()->set(SudoManager::SESSION_INTENDED, $redirectParam);
+        }
+
         // If already in sudo mode, redirect to intended or sudo default redirect
         if ($sudo->check()) {
-            $intended = session()->get(SudoManager::SESSION_INTENDED) ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
+            $intended = session()->get(SudoManager::SESSION_INTENDED) ?? $this->request->getGet('redirect') ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
             session()->remove(SudoManager::SESSION_INTENDED);
 
             $data = new AuthResponseData(
@@ -164,7 +168,15 @@ class SudoController extends BaseAuthController
             return $this->renderResponse('sudo.verify', $data);
         }
 
-        $intended = session()->get(SudoManager::SESSION_INTENDED) ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
+        $rawRedirect = $this->request->getGet('redirect') ?? $this->request->getPost('redirect');
+        if (!$rawRedirect && $this->request->is('json')) {
+            $json = $this->request->getJSON(true);
+            $rawRedirect = $json['redirect'] ?? null;
+        }
+
+        $intended = session()->get(SudoManager::SESSION_INTENDED) 
+            ?? $rawRedirect 
+            ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
         session()->remove(SudoManager::SESSION_INTENDED);
 
         $data = new AuthResponseData(
@@ -191,12 +203,16 @@ class SudoController extends BaseAuthController
     {
         Services::sudo()->deactivate();
 
+        $redirectUrl = $this->request->getGet('redirect') 
+            ?? $this->request->getPost('redirect') 
+            ?? auth_redirect_url('sudo', auth_redirect_url('login', '/'));
+
         $data = new AuthResponseData(
             action: 'sudo.exit',
             status: 'success',
             statusCode: 200,
             message: 'Sudo mode exited.',
-            redirectTo: auth_redirect_url('sudo', auth_redirect_url('login', '/'))
+            redirectTo: $redirectUrl
         );
 
         return $this->renderResponse('sudo.exit', $data);
