@@ -22,11 +22,6 @@ class Email2FA implements AuthActionInterface
         return 'email_2fa';
     }
 
-    public function isPending(RequestInterface $request, User $user): bool
-    {
-        return true;
-    }
-
     public function show(RequestInterface $request, User $user): ResponseInterface
     {
         $session = Services::session();

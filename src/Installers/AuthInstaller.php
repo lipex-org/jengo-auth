@@ -7,6 +7,7 @@ namespace Jengo\Auth\Installers;
 use CodeIgniter\CLI\CLI;
 use Config\Services;
 use Jengo\Base\Installers\Contracts\AbstractInstaller;
+use Jengo\Base\Tooling\Modifier\ClassModifier;
 use Vima\CodeIgniter\Commands\VimaSetup;
 
 class AuthInstaller extends AbstractInstaller
@@ -91,6 +92,27 @@ class AuthInstaller extends AbstractInstaller
         $kit = $this->resolveKit();
 
         if ($kit !== null) {
+            if (file_exists($targetConfig)) {
+                $inertiaViews = [
+                    'login'               => 'auth/login',
+                    'register'            => 'auth/register',
+                    'forgotPassword'      => 'auth/forgot_password',
+                    'resetPassword'       => 'auth/reset_password',
+                    'magicLink'           => 'auth/magic_link',
+                    'action_mfa'          => 'auth/mfa_challenge',
+                    'sudo'                => 'auth/sudo_challenge',
+                    'two_factor_settings' => 'auth/two_factor_settings',
+                    'tokens'              => 'auth/tokens_index',
+                ];
+
+                ClassModifier::fromFile($targetConfig)
+                    ->upsertProperty('viewRenderer', 'inertia')
+                    ->upsertProperty('views', $inertiaViews)
+                    ->saveTo($targetConfig);
+
+                CLI::write('  ' . CLI::color('✔', 'green') . ' Config/Auth.php viewRenderer set to [inertia] and views updated with Inertia component paths.');
+            }
+
             // Publish component stubs to client directory
             $stubsSource = dirname(__DIR__, 2) . '/stubs/' . $kit;
             if (is_dir($stubsSource)) {

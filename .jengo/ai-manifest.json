@@ -12,6 +12,16 @@
       "name": "vima",
       "class": "Vima\\Core\\VimaManager",
       "description": "Underlying Vima access control manager providing RBAC, ABAC policies, explicit denies, and audit logging."
+    },
+    {
+      "name": "sudo",
+      "class": "Jengo\\Auth\\Sudo\\SudoManager",
+      "description": "Elevated privilege step-up authentication manager providing Sudo grace periods, factor verification, and state tracking."
+    },
+    {
+      "name": "twoFactor",
+      "class": "Jengo\\Auth\\TwoFactor\\TwoFactorManager",
+      "description": "Multi-factor authentication manager orchestrating enrollment, verification, and driver lifecycle."
     }
   ],
   "guards": [
@@ -32,6 +42,36 @@
       "description": "Stateless Personal Access Token authenticator supporting token hashing and ability checks."
     }
   ],
+  "two_factor": {
+    "manager": "Jengo\\Auth\\TwoFactor\\TwoFactorManager",
+    "drivers": [
+      {
+        "id": "passkey",
+        "class": "Jengo\\Auth\\TwoFactor\\Drivers\\PasskeyDriver",
+        "description": "FIDO2 / WebAuthn hardware security keys, Touch ID, Face ID, and Windows Hello."
+      },
+      {
+        "id": "totp",
+        "class": "Jengo\\Auth\\TwoFactor\\Drivers\\TotpDriver",
+        "description": "RFC 6238 time-based one-time password (TOTP) authenticator app driver."
+      },
+      {
+        "id": "email_otp",
+        "class": "Jengo\\Auth\\TwoFactor\\Drivers\\EmailOtpDriver",
+        "description": "Time-limited 6-digit verification code delivered via primary email."
+      },
+      {
+        "id": "recovery_code",
+        "class": "Jengo\\Auth\\TwoFactor\\Drivers\\RecoveryCodeDriver",
+        "description": "Single-use emergency backup recovery codes."
+      },
+      {
+        "id": "password",
+        "class": "Jengo\\Auth\\TwoFactor\\Drivers\\PasswordDriver",
+        "description": "Re-authentication using account password hash."
+      }
+    ]
+  },
   "forms": [
     {
       "class": "Jengo\\Auth\\Forms\\LoginFormHandler",
@@ -52,6 +92,26 @@
     {
       "class": "Jengo\\Auth\\Forms\\MagicLinkFormHandler",
       "description": "FormHandler for magic link request validation."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\TwoFactorEnrollStartFormHandler",
+      "description": "FormHandler for initializing 2FA factor enrollment."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\TwoFactorEnrollConfirmFormHandler",
+      "description": "FormHandler for confirming 2FA factor enrollment proof."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\TwoFactorUnenrollFormHandler",
+      "description": "FormHandler for removing enrolled 2FA factors."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\SudoChallengeFormHandler",
+      "description": "FormHandler for initiating Sudo mode verification challenges."
+    },
+    {
+      "class": "Jengo\\Auth\\Forms\\SudoVerifyFormHandler",
+      "description": "FormHandler for verifying proof and activating Sudo mode."
     }
   ],
   "response_handling": {
@@ -59,6 +119,10 @@
     "description": "Centralized response orchestrator scaffolding active ResponseModifier detection, 404 masked responses, 422 validation failure generation, and jengo.form.failed event handling."
   },
   "modifiers": [
+    {
+      "class": "Jengo\\Auth\\Modifiers\\UniversalModifier",
+      "description": "Default multi-client modifier that dynamically routes requests to InertiaModifier (on X-Inertia), JsonModifier (on JSON/AJAX), or the configured viewRenderer ('standard' vs 'inertia' for browser page visits)."
+    },
     {
       "class": "Jengo\\Auth\\Modifiers\\StandardViewModifier",
       "description": "Default modifier rendering traditional CodeIgniter 4 HTML view templates and standard 302 flash redirects."
@@ -69,7 +133,7 @@
     },
     {
       "class": "Jengo\\Auth\\Modifiers\\InertiaModifier",
-      "description": "SPA modifier returning Inertia::render() components and Inertia redirects with shared props."
+      "description": "SPA modifier returning Inertia::render() components using Config/Auth::$views as single source of truth, and Inertia redirects with shared props."
     }
   ],
   "actions": [
@@ -79,7 +143,17 @@
     },
     {
       "class": "Jengo\\Auth\\Actions\\EmailActivator",
-      "description": "Post-registration account activation challenge verifying the user's email before granting active status."
+      "description": "Post-registration account activation challenge using HasActionPending trait to verify email before granting active status."
+    }
+  ],
+  "concerns": [
+    {
+      "trait": "Jengo\\Auth\\Concerns\\HasActionChallenge",
+      "description": "Trait providing abstract challenge() method to re-issue or reset authentication action challenge state."
+    },
+    {
+      "trait": "Jengo\\Auth\\Concerns\\HasActionPending",
+      "description": "Trait providing abstract isPending() method allowing actions to conditionally skip execution in the pipeline."
     }
   ],
   "notifiers": [
@@ -122,6 +196,14 @@
       "description": "Post-auth action controller (e.g. 2FA/MFA) enforcing strict 404 responses on failures."
     },
     {
+      "class": "Jengo\\Auth\\Controllers\\TwoFactorSettingsController",
+      "description": "Two-factor settings management controller for enrolling, verifying, and unenrolling 2FA factors."
+    },
+    {
+      "class": "Jengo\\Auth\\Controllers\\SudoController",
+      "description": "Privileged Sudo mode controller handling step-up challenge initialization, factor verification, and session deactivation."
+    },
+    {
       "class": "Jengo\\Auth\\Controllers\\TokenController",
       "description": "Personal access token lifecycle management controller."
     }
@@ -146,6 +228,10 @@
     {
       "class": "Jengo\\Auth\\Attributes\\Can",
       "description": "Requires the user to pass a Vima permission or ABAC policy check."
+    },
+    {
+      "class": "Jengo\\Auth\\Attributes\\Sudo",
+      "description": "Requires active Sudo mode (or triggers step-up authentication challenge) with customizable lifetime, permitted factors, and forceFresh flag."
     }
   ],
   "setup_providers": {
@@ -178,6 +264,16 @@
       "description": "Access the global authentication manager."
     },
     {
+      "name": "sudo",
+      "signature": "sudo(): Jengo\\Auth\\Sudo\\SudoManager",
+      "description": "Access the global Sudo step-up authentication manager."
+    },
+    {
+      "name": "two_factor",
+      "signature": "two_factor(): Jengo\\Auth\\TwoFactor\\TwoFactorManager",
+      "description": "Access the global Multi-Factor Authentication manager."
+    },
+    {
       "name": "vima",
       "signature": "vima(): Vima\\Core\\VimaManager",
       "description": "Access the global Vima authorization manager."
@@ -200,6 +296,6 @@
   ],
   "routing": {
     "class": "Jengo\\Auth\\Support\\RouteRegistrar",
-    "description": "Advanced route publishing with support for prefix/grouping, paths customization, only/except flow filtering, controller overrides, route name prefixes, and route filters."
+    "description": "Advanced route publishing with support for core, action, magicLink, twoFactor, sudo, and tokens feature suites, prefix/grouping, paths customization, only/except flow filtering, controller overrides, route name prefixes, and route filters."
   }
 }

@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\Concerns\HasActionChallenge;
+use Jengo\Auth\Concerns\HasActionPending;
 use Jengo\Auth\Contracts\AuthActionInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Entities\User;
@@ -16,6 +17,7 @@ use Jengo\Auth\Entities\User;
 class EmailActivator implements AuthActionInterface
 {
     use HasActionChallenge;
+    use HasActionPending;
 
     public function getActionName(): string
     {

@@ -73,6 +73,13 @@ class Auth extends BaseConfig
     public string $responseModifier = UniversalModifier::class;
 
     /**
+     * View renderer mode when using UniversalModifier for full-page browser requests (Accept: text/html).
+     * Options: 'standard' (Traditional CI4 HTML views) or 'inertia' (Inertia.js SPA HTML shell).
+     * Defaults to 'standard'. When a starter kit is installed, AuthInstaller configures this to 'inertia'.
+     */
+    public string $viewRenderer = 'standard';
+
+    /**
      * Modifiers used by UniversalModifier when dynamically routing responses.
      * Can be overridden with custom modifier implementations.
      */
@@ -125,7 +132,12 @@ class Auth extends BaseConfig
     ];
 
     /**
-     * View templates for standard HTML responses.
+     * View or Component templates for auth screens.
+     * This is the single source of truth for both traditional HTML views (StandardViewModifier)
+     * and SPA component identifiers (InertiaModifier).
+     *
+     * Default CI4 standard views: 'Jengo\Auth\Views\login', etc.
+     * Default Inertia components (when a kit is installed): 'auth/login', 'auth/register', etc.
      */
     public array $views = [
         "login"               => "Jengo\Auth\Views\login",
@@ -133,7 +145,6 @@ class Auth extends BaseConfig
         "forgotPassword"      => 'Jengo\Auth\Views\forgot_password',
         "resetPassword"       => 'Jengo\Auth\Views\reset_password',
         "magicLink"           => "Jengo\Auth\Views\magic_link",
-        "magicLinkSent"       => "Jengo\Auth\Views\magic_link_sent",
         "action_mfa"          => "Jengo\Auth\Views\mfa_challenge",
         "sudo"                => "Jengo\Auth\Views\sudo_challenge",
         'two_factor_settings' => 'Jengo\\Auth\\Views\\two_factor_settings',

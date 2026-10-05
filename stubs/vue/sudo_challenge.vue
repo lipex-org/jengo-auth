@@ -12,7 +12,10 @@ interface Factor {
 }
 
 const props = defineProps<{
-  available_factors?: Factor[];
+  data?: {
+    available_factors?: Factor[];
+    sudo_active?: boolean;
+  };
   message?: string;
   error?: string;
 }>();

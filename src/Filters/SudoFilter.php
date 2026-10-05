@@ -30,14 +30,14 @@ class SudoFilter implements FilterInterface
         $lifetime = $arguments[0] ?? '2 hours';
         $forceFresh = false;
         $allowedFactors = [];
-        $redirectTo = '/auth/sudo';
+        $redirectTo = auth_url('auth.sudo') ?? '/auth/sudo';
 
         // 2. Inspect controller method for #[Sudo] attribute
         $router = Services::router();
         $controllerName = $router->controllerName();
         $methodName = (string) $router->methodName();
 
-        if ($controllerName && class_exists($controllerName)) {
+        if (is_string($controllerName) && class_exists($controllerName)) {
             $refClass = new ReflectionClass($controllerName);
             $sudoAttr = $refClass->getAttributes(Sudo::class)[0] ?? null;
 

@@ -1,8 +1,10 @@
 <script lang="ts">
   import { inertia, router, page } from '@inertiajs/svelte';
 
-  export let enrolled_factors: any[] = [];
-  export let available_factors: any[] = [];
+  export let data: {
+    enrolled_factors?: any[];
+    available_factors?: any[];
+  } = {};
   export let message: string = '';
   export let error: string = '';
   export let user: any = null;
@@ -17,101 +19,122 @@
   let totpCode = '';
   let recoveryModal = false;
   let recoveryCodes: string[] = [];
+  let isProcessing = false;
 
-  $: isEnrolled = (id: string) => enrolled_factors.some((f) => f.id === id);
+  $: isEnrolled = (id: string) => data?.enrolled_factors?.some((f: any) => f.id === id);
 
-  async function startTotp() {
-    const res = await fetch('/user/two-factor/enroll/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor: 'totp' }),
-    });
-    const json = await res.json();
-    if (json.status === 'success') {
-      totpData = json.data.data;
+  $: if (flash?.enrollment_data) {
+    const factor = flash?.enrollment_factor;
+    if (factor === 'totp' && flash.enrollment_data.secret) {
+      totpData = flash.enrollment_data;
       totpModal = true;
-    }
-  }
-
-  async function confirmTotp() {
-    const res = await fetch('/user/two-factor/enroll/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor: 'totp', code: totpCode }),
-    });
-    const json = await res.json();
-    if (json.status === 'success') {
-      totpModal = false;
-      router.reload();
-    } else {
-      alert(json.message || 'Invalid code');
-    }
-  }
-
-  async function startPasskey() {
-    const name = prompt('Name for this passkey:', 'MacBook Touch ID / YubiKey');
-    if (!name) return;
-
-    const res = await fetch('/user/two-factor/enroll/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor: 'passkey', options: { name } }),
-    });
-    const json = await res.json();
-    if (json.status !== 'success' || !json.data?.data?.options) {
-      alert(json.message || 'Failed to initialize passkey');
-      return;
-    }
-
-    const options = json.data.data.options;
-    options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
-    options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
-
-    const cred = (await navigator.credentials.create({ publicKey: options })) as any;
-    const proof = {
-      id: cred.id,
-      rawId: btoa(String.fromCharCode(...new Uint8Array(cred.rawId))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
-      clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(cred.response.clientDataJSON))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
-      attestationObject: btoa(String.fromCharCode(...new Uint8Array(cred.response.attestationObject))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
-    };
-
-    const confirmRes = await fetch('/user/two-factor/enroll/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor: 'passkey', proof, metadata: { name } }),
-    });
-    const confirmJson = await confirmRes.json();
-    if (confirmJson.status === 'success') {
-      alert('Passkey registered successfully!');
-      router.reload();
-    }
-  }
-
-  async function startRecoveryCodes() {
-    if (!confirm('Generating new recovery codes will invalidate prior codes. Continue?')) return;
-    const res = await fetch('/user/two-factor/enroll/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor: 'recovery_code' }),
-    });
-    const json = await res.json();
-    if (json.status === 'success' && json.data?.data?.codes) {
-      recoveryCodes = json.data.data.codes;
+    } else if (factor === 'recovery_code' && flash.enrollment_data.codes) {
+      recoveryCodes = flash.enrollment_data.codes;
       recoveryModal = true;
     }
   }
 
-  async function unenroll(factor: string) {
+  function startTotp() {
+    isProcessing = true;
+    router.post(
+      '/user/two-factor/enroll/start',
+      { factor: 'totp' },
+      {
+        preserveScroll: true,
+        onFinish: () => {
+          isProcessing = false;
+        },
+      }
+    );
+  }
+
+  function confirmTotp() {
+    if (!totpCode) return;
+    router.post(
+      '/user/two-factor/enroll/confirm',
+      { factor: 'totp', code: totpCode },
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          totpModal = false;
+          totpCode = '';
+        },
+      }
+    );
+  }
+
+  function startPasskey() {
+    const name = prompt('Name for this passkey:', 'MacBook Touch ID / YubiKey');
+    if (!name) return;
+
+    isProcessing = true;
+    router.post(
+      '/user/two-factor/enroll/start',
+      { factor: 'passkey', options: { name } },
+      {
+        preserveScroll: true,
+        onSuccess: async () => {
+          const enrollmentData = flash?.enrollment_data;
+          if (!enrollmentData?.options) {
+            isProcessing = false;
+            return;
+          }
+
+          try {
+            const options = enrollmentData.options;
+            options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+            options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+
+            const cred = (await navigator.credentials.create({ publicKey: options })) as any;
+            const proof = {
+              id: cred.id,
+              rawId: btoa(String.fromCharCode(...new Uint8Array(cred.rawId))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+              clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(cred.response.clientDataJSON))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+              attestationObject: btoa(String.fromCharCode(...new Uint8Array(cred.response.attestationObject))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+            };
+
+            router.post(
+              '/user/two-factor/enroll/confirm',
+              { factor: 'passkey', proof, metadata: { name } },
+              {
+                preserveScroll: true,
+                onFinish: () => {
+                  isProcessing = false;
+                },
+              }
+            );
+          } catch (err: any) {
+            isProcessing = false;
+            alert(err?.message || 'Passkey registration cancelled or failed');
+          }
+        },
+        onError: () => {
+          isProcessing = false;
+        },
+      }
+    );
+  }
+
+  function startRecoveryCodes() {
+    if (!confirm('Generating new recovery codes will invalidate prior codes. Continue?')) return;
+    router.post(
+      '/user/two-factor/enroll/start',
+      { factor: 'recovery_code' },
+      {
+        preserveScroll: true,
+      }
+    );
+  }
+
+  function unenroll(factor: string) {
     if (!confirm(`Are you sure you want to remove ${factor.toUpperCase()}?`)) return;
-    const res = await fetch('/user/two-factor/unenroll', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor }),
-    });
-    const json = await res.json();
-    if (json.status === 'success') {
-      router.reload();
-    }
+    router.post(
+      '/user/two-factor/unenroll',
+      { factor },
+      {
+        preserveScroll: true,
+      }
+    );
   }
 </script>
 

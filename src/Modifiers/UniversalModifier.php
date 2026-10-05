@@ -15,11 +15,13 @@ class UniversalModifier implements ResponseModifierInterface
      * @param ResponseModifierInterface|class-string<ResponseModifierInterface>|null $inertiaModifier
      * @param ResponseModifierInterface|class-string<ResponseModifierInterface>|null $jsonModifier
      * @param ResponseModifierInterface|class-string<ResponseModifierInterface>|null $standardModifier
+     * @param string|null $viewRenderer 'standard', 'inertia', or class-string
      */
     public function __construct(
         protected ResponseModifierInterface|string|null $inertiaModifier = null,
         protected ResponseModifierInterface|string|null $jsonModifier = null,
         protected ResponseModifierInterface|string|null $standardModifier = null,
+        protected ?string $viewRenderer = null,
     ) {
     }
 
@@ -38,21 +40,27 @@ class UniversalModifier implements ResponseModifierInterface
     }
 
     /**
-     * Resolve the target modifier based on incoming request headers / state.
+     * Resolve the target modifier based on incoming request headers / state and configured view renderer.
      */
     public function resolveModifier(RequestInterface $request): ResponseModifierInterface
     {
-        // 1. Inertia request detection (X-Inertia header)
+        // 1. Inertia client-side SPA transition (X-Inertia header present)
         if ($this->isInertiaRequest($request)) {
             return $this->getInertiaModifier();
         }
-
-        // 2. JSON / API / AJAX request detection
+        
+        // 2. JSON / API / AJAX request detection (always wins when request explicitly requests JSON or is AJAX)
         if ($this->isJsonRequest($request)) {
             return $this->getJsonModifier();
         }
 
-        // 3. Fallback to standard view modifier (traditional HTML/form)
+        // 3. Full-page browser requests (Accept: text/html or standard navigation)
+        // Lean on the configured viewRenderer ('inertia' or 'standard')
+        $renderer = $this->getViewRenderer();
+        if ($renderer === 'inertia' || $renderer === InertiaModifier::class) {
+            return $this->getInertiaModifier();
+        }
+
         return $this->getStandardModifier();
     }
 
@@ -77,6 +85,20 @@ class UniversalModifier implements ResponseModifierInterface
         $contentType = (string) $request->getHeaderLine('Content-Type');
 
         return str_contains($accept, 'application/json') || str_contains($contentType, 'application/json');
+    }
+
+    public function getViewRenderer(): string
+    {
+        return $this->viewRenderer
+            ?? config('Auth')->viewRenderer
+            ?? 'standard';
+    }
+
+    public function setViewRenderer(?string $viewRenderer): self
+    {
+        $this->viewRenderer = $viewRenderer;
+
+        return $this;
     }
 
     public function getInertiaModifier(): ResponseModifierInterface

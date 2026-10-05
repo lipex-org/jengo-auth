@@ -120,14 +120,12 @@ class StandardViewModifier implements ResponseModifierInterface
             'forgot_password.view'=> $views['forgotPassword'] ?? 'Jengo\Auth\Views\forgot_password',
             'reset_password.view' => $views['resetPassword'] ?? 'Jengo\Auth\Views\reset_password',
             'magic_link.view'     => $views['magicLink'] ?? 'Jengo\Auth\Views\magic_link',
-            'magic_link.sent'     => $views['magicLinkSent'] ?? 'Jengo\Auth\Views\magic_link_sent',
             'sudo.view', 'auth.sudo' => $views['sudo'] ?? 'Jengo\Auth\Views\sudo_challenge',
             'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? 'Jengo\\Auth\\Views\\two_factor_settings',
             'tokens.list', 'tokens.index', 'tokens.view' => $views['tokens'] ?? 'Jengo\\Auth\\Views\\tokens_index',
             default               => null,
         };
     }
-
     public function modifyValidationFailed(array $errors, RequestInterface $request, array $options = []): ResponseInterface
     {
         return redirect()->back()->withInput()->with('errors', $errors);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 
 interface Factor {
@@ -11,8 +11,10 @@ interface Factor {
 }
 
 const props = defineProps<{
-  enrolled_factors?: Factor[];
-  available_factors?: Factor[];
+  data?: {
+    enrolled_factors?: Factor[];
+    available_factors?: Factor[];
+  };
   message?: string;
   error?: string;
   user?: any;
@@ -30,23 +32,44 @@ const totpData = ref<{ secret: string; qr_data_uri?: string; qr_uri?: string } |
 const totpCode = ref('');
 const recoveryModal = ref(false);
 const recoveryCodes = ref<string[]>([]);
+const isProcessing = ref(false);
 
-const isEnrolled = (id: string) => props.enrolled_factors?.some((f) => f.id === id);
+const isEnrolled = (id: string) => props.data?.enrolled_factors?.some((f) => f.id === id);
 
-const startTotp = async () => {
-  const res = await fetch('/user/two-factor/enroll/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ factor: 'totp' }),
-  });
-  const json = await res.json();
-  if (json.status === 'success') {
-    totpData.value = json.data.data;
-    totpModal.value = true;
-  }
+// Watch for flash enrollment data received via standard Inertia redirects
+watch(
+  () => flash.value.enrollment_data,
+  (enrollmentData) => {
+    if (!enrollmentData) return;
+    const factor = flash.value.enrollment_factor;
+
+    if (factor === 'totp' && enrollmentData.secret) {
+      totpData.value = enrollmentData;
+      totpModal.value = true;
+    } else if (factor === 'recovery_code' && enrollmentData.codes) {
+      recoveryCodes.value = enrollmentData.codes;
+      recoveryModal.value = true;
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+const startTotp = () => {
+  isProcessing.value = true;
+  router.post(
+    '/user/two-factor/enroll/start',
+    { factor: 'totp' },
+    {
+      preserveScroll: true,
+      onFinish: () => {
+        isProcessing.value = false;
+      },
+    }
+  );
 };
 
 const confirmTotp = () => {
+  if (!totpCode.value) return;
   router.post(
     '/user/two-factor/enroll/confirm',
     { factor: 'totp', code: totpCode.value },
@@ -60,54 +83,67 @@ const confirmTotp = () => {
   );
 };
 
-const startPasskey = async () => {
+const startPasskey = () => {
   const name = prompt('Name for this passkey:', 'MacBook Touch ID / YubiKey');
   if (!name) return;
 
-  const res = await fetch('/user/two-factor/enroll/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ factor: 'passkey', options: { name } }),
-  });
-  const json = await res.json();
-  if (json.status !== 'success' || !json.data?.data?.options) {
-    alert(json.message || 'Failed to initialize passkey');
-    return;
-  }
-
-  const options = json.data.data.options;
-  options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
-  options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
-
-  const cred = (await navigator.credentials.create({ publicKey: options })) as any;
-  const proof = {
-    id: cred.id,
-    rawId: btoa(String.fromCharCode(...new Uint8Array(cred.rawId))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
-    clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(cred.response.clientDataJSON))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
-    attestationObject: btoa(String.fromCharCode(...new Uint8Array(cred.response.attestationObject))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
-  };
-
+  isProcessing.value = true;
   router.post(
-    '/user/two-factor/enroll/confirm',
-    { factor: 'passkey', proof, metadata: { name } },
+    '/user/two-factor/enroll/start',
+    { factor: 'passkey', options: { name } },
     {
       preserveScroll: true,
+      onSuccess: async () => {
+        const enrollmentData = flash.value.enrollment_data;
+        if (!enrollmentData?.options) {
+          isProcessing.value = false;
+          return;
+        }
+
+        try {
+          const options = enrollmentData.options;
+          options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+          options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+
+          const cred = (await navigator.credentials.create({ publicKey: options })) as any;
+          const proof = {
+            id: cred.id,
+            rawId: btoa(String.fromCharCode(...new Uint8Array(cred.rawId))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+            clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(cred.response.clientDataJSON))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+            attestationObject: btoa(String.fromCharCode(...new Uint8Array(cred.response.attestationObject))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
+          };
+
+          router.post(
+            '/user/two-factor/enroll/confirm',
+            { factor: 'passkey', proof, metadata: { name } },
+            {
+              preserveScroll: true,
+              onFinish: () => {
+                isProcessing.value = false;
+              },
+            }
+          );
+        } catch (err: any) {
+          isProcessing.value = false;
+          alert(err?.message || 'Passkey registration cancelled or failed');
+        }
+      },
+      onError: () => {
+        isProcessing.value = false;
+      },
     }
   );
 };
 
-const startRecoveryCodes = async () => {
+const startRecoveryCodes = () => {
   if (!confirm('Generating new recovery codes will invalidate prior codes. Continue?')) return;
-  const res = await fetch('/user/two-factor/enroll/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ factor: 'recovery_code' }),
-  });
-  const json = await res.json();
-  if (json.status === 'success' && json.data?.data?.codes) {
-    recoveryCodes.value = json.data.data.codes;
-    recoveryModal.value = true;
-  }
+  router.post(
+    '/user/two-factor/enroll/start',
+    { factor: 'recovery_code' },
+    {
+      preserveScroll: true,
+    }
+  );
 };
 
 const unenroll = (factor: string) => {

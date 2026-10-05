@@ -10,13 +10,18 @@ interface Factor {
 }
 
 interface SudoChallengeProps {
+  data?: {
+    available_factors?: Factor[];
+    sudo_active?: boolean;
+  };
   available_factors?: Factor[];
   message?: string;
   error?: string;
   flash?: Record<string, string>;
 }
 
-export default function SudoChallenge({ available_factors = [], error: initialError, message: initialMessage }: SudoChallengeProps) {
+export default function SudoChallenge({ data: dataProp, available_factors: rootFactors = [], error: initialError, message: initialMessage }: SudoChallengeProps) {
+  const available_factors = dataProp?.available_factors || rootFactors;
   const { props } = usePage<any>();
   const flash = props.flash || {};
   const pageErrors = props.errors || {};

@@ -55,8 +55,6 @@ class TwoFactorSettingsController extends BaseAuthController
             data: [
                 'enrolled_factors' => $enrolled,
                 'available_factors' => $available,
-                'enrolledFactors' => $enrolled,
-                'availableFactors' => $available,
             ],
             user: $user
         );
@@ -99,7 +97,12 @@ class TwoFactorSettingsController extends BaseAuthController
                     'factor' => $driverId,
                     'data' => $result,
                 ],
-                user: $auth->user()
+                flash: [
+                    'enrollment_factor' => $driverId,
+                    'enrollment_data'   => $result,
+                ],
+                user: $auth->user(),
+                redirectTo: auth_url('two-factor.index')
             );
             return $this->renderResponse('two_factor.enroll.start', $data);
         } catch (\Throwable $e) {
@@ -107,7 +110,8 @@ class TwoFactorSettingsController extends BaseAuthController
                 action: 'two_factor.enroll.start',
                 status: 'error',
                 statusCode: 400,
-                message: $e->getMessage()
+                message: $e->getMessage(),
+                redirectTo: auth_url('two-factor.index')
             );
             return $this->renderResponse('two_factor.enroll.start', $data);
         }

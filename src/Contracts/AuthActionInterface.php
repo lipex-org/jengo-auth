@@ -16,12 +16,6 @@ interface AuthActionInterface
     public function getActionName(): string;
 
     /**
-     * Check if this action is currently pending / required for the given user.
-     * Returning false allows the action pipeline to automatically skip this action and advance to the next one.
-     */
-    public function isPending(RequestInterface $request, User $user): bool;
-
-    /**
      * Render or prepare the action view/challenge.
      */
     public function show(RequestInterface $request, User $user): ResponseInterface;

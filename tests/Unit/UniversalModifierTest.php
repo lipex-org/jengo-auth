@@ -61,6 +61,24 @@ class UniversalModifierTest extends TestCase
         $this->assertInstanceOf(StandardViewModifier::class, $resolved);
     }
 
+    public function testResolvesInertiaModifierForBrowserRequestsWhenViewRendererIsInertia(): void
+    {
+        $modifier = new UniversalModifier(viewRenderer: 'inertia');
+        $request = $this->createMockRequest(['Accept' => 'text/html,application/xhtml+xml']);
+
+        $resolved = $modifier->resolveModifier($request);
+        $this->assertInstanceOf(InertiaModifier::class, $resolved);
+    }
+
+    public function testJsonRequestsStillWinEvenWhenViewRendererIsInertia(): void
+    {
+        $modifier = new UniversalModifier(viewRenderer: 'inertia');
+        $request = $this->createMockRequest(['Accept' => 'application/json']);
+
+        $resolved = $modifier->resolveModifier($request);
+        $this->assertInstanceOf(JsonModifier::class, $resolved);
+    }
+
     public function testAllowsCustomConfiguredModifierClasses(): void
     {
         $modifier = new UniversalModifier(

@@ -60,7 +60,6 @@ class SudoController extends BaseAuthController
             data: [
                 'sudo_active'       => false,
                 'available_factors' => $availableFactors,
-                'availableFactors'  => $availableFactors,
             ],
             user: $user
         );

@@ -1,9 +1,15 @@
 <script lang="ts">
   import { useForm, page } from '@inertiajs/svelte';
 
+  export let data: {
+    available_factors?: any[];
+    sudo_active?: boolean;
+  } = {};
   export let available_factors: any[] = [];
   export let message: string = '';
   export let error: string = '';
+
+  $: resolvedFactors = data?.available_factors || available_factors || [];
 
   $: flash = $page?.props?.flash || {};
   $: pageErrors = $page?.props?.errors || {};

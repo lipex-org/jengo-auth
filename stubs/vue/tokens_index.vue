@@ -13,7 +13,7 @@ interface Token {
 }
 
 const props = defineProps<{
-  tokens?: Token[];
+  data?: { tokens?: Token[] };
   message?: string;
   error?: string;
 }>();
@@ -143,13 +143,13 @@ const revokeToken = (tokenId: number) => {
           Tokens configured on your account. You can revoke access at any time.
         </p>
 
-        <div v-if="!tokens || tokens.length === 0" class="text-center py-8 text-slate-500 text-xs">
+        <div v-if="!data?.tokens || data.tokens.length === 0" class="text-center py-8 text-slate-500 text-xs">
           No personal access tokens generated yet.
         </div>
 
         <div v-else class="divide-y divide-slate-800">
           <div
-            v-for="token in tokens"
+            v-for="token in data.tokens"
             :key="token.id"
             class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
