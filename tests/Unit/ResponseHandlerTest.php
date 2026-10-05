@@ -8,7 +8,7 @@ use CodeIgniter\Events\Events;
 use Config\Services;
 use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Modifiers\JsonModifier;
-use Jengo\Auth\Modifiers\StandardViewModifier;
+use Jengo\Auth\Modifiers\UniversalModifier;
 use Jengo\Auth\Support\ResponseHandler;
 use Jengo\Base\Validation\FormFailedResponseHolder;
 use Tests\TestCase;
@@ -18,7 +18,7 @@ class ResponseHandlerTest extends TestCase
     public function testRendersViaConfiguredModifier(): void
     {
         $handler = new ResponseHandler();
-        $this->assertInstanceOf(StandardViewModifier::class, $handler->getModifier());
+        $this->assertInstanceOf(UniversalModifier::class, $handler->getModifier());
 
         // Swap to JSON modifier
         $handler->setModifier(new JsonModifier());

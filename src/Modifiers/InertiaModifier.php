@@ -14,7 +14,6 @@ class InertiaModifier implements ResponseModifierInterface
 {
     public function modify(string $action, AuthResponseData $data, RequestInterface $request): ResponseInterface
     {
-
         // 1. Errors
         if (!$data->isSuccess()) {
             if ($data->statusCode === 404) {
@@ -51,9 +50,17 @@ class InertiaModifier implements ResponseModifierInterface
         }
 
         // 3. Success Redirect
-        $redirectUrl = $data->redirectTo ?? (function_exists('auth_redirect_url') ? auth_redirect_url('login', '/') : (config('Auth')->redirects['login'] ?? '/'));
+        $redirectUrl = $data->redirectTo ?? (function_exists('auth_redirect_url')
+            ? auth_redirect_url('login', '/')
+            : (config('Auth')->redirects['login'] ?? '/'));
         if ($data->message) {
             session()->setFlashdata('message', $data->message);
+        }
+
+        if (!empty($data->flash) && is_array($data->flash)) {
+            foreach ($data->flash as $key => $value) {
+                session()->setFlashdata($key, $value);
+            }
         }
 
         $useInertiaLocation = $data->data['use_inertia_location'] ?? false;
@@ -78,9 +85,9 @@ class InertiaModifier implements ResponseModifierInterface
         if ($action === 'action.show') {
             $actionName = $data['action'] ?? null;
             if ($actionName) {
-                if (! empty($views['action_' . $actionName])) {
+                if (!empty($views['action_' . $actionName])) {
                     $configuredView = $views['action_' . $actionName];
-                } elseif (! empty($views['action_mfa_' . $actionName])) {
+                } elseif (!empty($views['action_mfa_' . $actionName])) {
                     $configuredView = $views['action_mfa_' . $actionName];
                 }
             }
@@ -97,6 +104,7 @@ class InertiaModifier implements ResponseModifierInterface
                 'magic_link.sent' => $views['magicLinkSent'] ?? null,
                 'sudo.view', 'auth.sudo' => $views['sudo'] ?? null,
                 'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? null,
+                'tokens.list', 'tokens.index', 'tokens.view' => $views['tokens'] ?? null,
                 default => null,
             };
         }

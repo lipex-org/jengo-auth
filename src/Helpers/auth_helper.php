@@ -115,7 +115,9 @@ if (!function_exists('auth_url')) {
             'auth.sudo.verify'   => 'auth/sudo/verify',
             'auth.sudo.exit'     => 'auth/sudo/exit',
             'two-factor.index'   => 'user/two-factor',
-            'tokens.index'       => 'api/tokens',
+            'tokens.index'       => 'tokens',
+            'tokens.create'      => 'tokens/create',
+            'tokens.revoke'      => 'tokens/revoke' . (!empty($params) ? '/' . $params[0] : ''),
         ];
 
         return site_url($fallbacks[$routeName] ?? $routeName);

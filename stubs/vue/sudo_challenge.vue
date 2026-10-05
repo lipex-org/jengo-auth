@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 
 interface Factor {
   id: string;
@@ -71,17 +72,7 @@ const handlePasskeyAuth = async () => {
       signature: btoa(String.fromCharCode(...new Uint8Array(cred.response.signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
     };
 
-    const verifyRes = await fetch('/auth/sudo/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ factor: 'passkey', proof }),
-    });
-    const verifyData = await verifyRes.json();
-    if (verifyData.status === 'success') {
-      window.location.href = verifyData.data?.intended_url || '/';
-    } else {
-      alert(verifyData.message || 'Passkey verification failed.');
-    }
+    router.post('/auth/sudo/verify', { factor: 'passkey', proof });
   } catch (err: any) {
     alert('Passkey error: ' + err.message);
   }

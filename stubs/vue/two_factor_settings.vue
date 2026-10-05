@@ -46,19 +46,18 @@ const startTotp = async () => {
   }
 };
 
-const confirmTotp = async () => {
-  const res = await fetch('/user/two-factor/enroll/confirm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ factor: 'totp', code: totpCode.value }),
-  });
-  const json = await res.json();
-  if (json.status === 'success') {
-    totpModal.value = false;
-    router.reload();
-  } else {
-    alert(json.message || 'Invalid confirmation code');
-  }
+const confirmTotp = () => {
+  router.post(
+    '/user/two-factor/enroll/confirm',
+    { factor: 'totp', code: totpCode.value },
+    {
+      preserveScroll: true,
+      onSuccess: () => {
+        totpModal.value = false;
+        totpCode.value = '';
+      },
+    }
+  );
 };
 
 const startPasskey = async () => {
@@ -88,16 +87,13 @@ const startPasskey = async () => {
     attestationObject: btoa(String.fromCharCode(...new Uint8Array(cred.response.attestationObject))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
   };
 
-  const confirmRes = await fetch('/user/two-factor/enroll/confirm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ factor: 'passkey', proof, metadata: { name } }),
-  });
-  const confirmJson = await confirmRes.json();
-  if (confirmJson.status === 'success') {
-    alert('Passkey registered successfully!');
-    router.reload();
-  }
+  router.post(
+    '/user/two-factor/enroll/confirm',
+    { factor: 'passkey', proof, metadata: { name } },
+    {
+      preserveScroll: true,
+    }
+  );
 };
 
 const startRecoveryCodes = async () => {
@@ -114,17 +110,15 @@ const startRecoveryCodes = async () => {
   }
 };
 
-const unenroll = async (factor: string) => {
+const unenroll = (factor: string) => {
   if (!confirm(`Are you sure you want to remove ${factor.toUpperCase()}?`)) return;
-  const res = await fetch('/user/two-factor/unenroll', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ factor }),
-  });
-  const json = await res.json();
-  if (json.status === 'success') {
-    router.reload();
-  }
+  router.post(
+    '/user/two-factor/unenroll',
+    { factor },
+    {
+      preserveScroll: true,
+    }
+  );
 };
 </script>
 

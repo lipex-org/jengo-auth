@@ -86,6 +86,12 @@ class StandardViewModifier implements ResponseModifierInterface
             $redirect = $redirect->with('message', $data->message);
         }
 
+        if(!empty($data->flash) && is_array($data->flash)) {
+            foreach($data->flash as $key => $value) {
+                $redirect = $redirect->with($key, $value);
+            }
+        }
+
         return $redirect;
     }
 
@@ -117,6 +123,7 @@ class StandardViewModifier implements ResponseModifierInterface
             'magic_link.sent'     => $views['magicLinkSent'] ?? 'Jengo\Auth\Views\magic_link_sent',
             'sudo.view', 'auth.sudo' => $views['sudo'] ?? 'Jengo\Auth\Views\sudo_challenge',
             'two_factor.view', 'two_factor.index' => $views['two_factor_settings'] ?? 'Jengo\\Auth\\Views\\two_factor_settings',
+            'tokens.list', 'tokens.index', 'tokens.view' => $views['tokens'] ?? 'Jengo\\Auth\\Views\\tokens_index',
             default               => null,
         };
     }

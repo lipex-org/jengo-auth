@@ -17,7 +17,8 @@ class AuthResponseData
         public array $errors = [],
         public ?string $redirectTo = null,
         public ?string $view = null,
-        public ?User $user = null
+        public ?User $user = null,
+        public array $flash = []
     ) {
     }
 

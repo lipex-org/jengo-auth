@@ -6,10 +6,7 @@ namespace Jengo\Auth\Installers;
 
 use CodeIgniter\CLI\CLI;
 use Config\Services;
-use Jengo\Auth\Modifiers\InertiaModifier;
-use Jengo\Auth\Modifiers\StandardViewModifier;
 use Jengo\Base\Installers\Contracts\AbstractInstaller;
-use Jengo\Base\Tooling\Modifier\ClassModifier;
 use Vima\CodeIgniter\Commands\VimaSetup;
 
 class AuthInstaller extends AbstractInstaller
@@ -90,18 +87,10 @@ class AuthInstaller extends AbstractInstaller
             }
         }
 
-        // 2. Determine Kit and Apply Modifier / Publish Stubs
+        // 2. Determine Kit and Publish Stubs (UniversalModifier dynamically handles Inertia, JSON, and Standard Views)
         $kit = $this->resolveKit();
 
-        if ($kit !== null && file_exists($targetConfig)) {
-            // Update Auth config to use InertiaModifier
-            ClassModifier::fromFile($targetConfig)
-                ->addUseStatement(InertiaModifier::class)
-                ->upsertProperty('responseModifier', InertiaModifier::class)
-                ->saveTo($targetConfig);
-
-            CLI::write('  ' . CLI::color('✔', 'green') . ' Config/Auth.php updated with InertiaModifier.');
-
+        if ($kit !== null) {
             // Publish component stubs to client directory
             $stubsSource = dirname(__DIR__, 2) . '/stubs/' . $kit;
             if (is_dir($stubsSource)) {
@@ -111,12 +100,6 @@ class AuthInstaller extends AbstractInstaller
             } else {
                 CLI::write("  " . CLI::color('●', 'yellow') . " No stubs found for kit [{$kit}] at {$stubsSource}.");
             }
-        } elseif (file_exists($targetConfig)) {
-            // Ensure StandardViewModifier is set when no kit is provided
-            ClassModifier::fromFile($targetConfig)
-                ->addUseStatement(StandardViewModifier::class)
-                ->upsertProperty('responseModifier', StandardViewModifier::class)
-                ->saveTo($targetConfig);
         }
 
         // 3. Run Vima Setup

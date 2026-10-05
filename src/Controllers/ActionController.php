@@ -27,16 +27,39 @@ class ActionController extends BaseAuthController
         }
 
         [$actions, $user] = $context;
-        $currentActionClass = $actions[0];
 
-        if (! class_exists($currentActionClass)) {
-            throw new \RuntimeException("Authentication action class [{$currentActionClass}] does not exist.");
+        // Loop until an action is pending or all actions are completed
+        while (! empty($actions)) {
+            $currentActionClass = $actions[0];
+
+            if (! class_exists($currentActionClass)) {
+                throw new \RuntimeException("Authentication action class [{$currentActionClass}] does not exist.");
+            }
+
+            /** @var AuthActionInterface $actionInstance */
+            $actionInstance = new $currentActionClass();
+
+            // Check if action is pending
+            $isPending = method_exists($actionInstance, 'isPending')
+                ? $actionInstance->isPending($this->request, $user)
+                : true;
+
+            if ($isPending) {
+                // Update session state to current pending action
+                $session = Services::session();
+                $session->set('auth_pending_actions', array_values($actions));
+                $session->set('auth_pending_action', $currentActionClass);
+
+                return $actionInstance->show($this->request, $user);
+            }
+
+            // Action is not pending; trigger actionSkipped event and shift
+            Events::trigger('actionSkipped', $user, $actionInstance->getActionName());
+            array_shift($actions);
         }
 
-        /** @var AuthActionInterface $actionInstance */
-        $actionInstance = new $currentActionClass();
-
-        return $actionInstance->show($this->request, $user);
+        // All pipeline actions completed/skipped: finalize login
+        return $this->finalizeLogin($user);
     }
 
     /**
@@ -90,7 +113,6 @@ class ActionController extends BaseAuthController
 
         [$actions, $user] = $context;
         $session = Services::session();
-        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
         $currentActionClass = $actions[0];
 
         if (! class_exists($currentActionClass)) {
@@ -112,24 +134,64 @@ class ActionController extends BaseAuthController
         // Shift completed action off pipeline queue
         array_shift($actions);
 
-        if (! empty($actions)) {
-            // More actions remain in pipeline: update queue and redirect to next action
-            $session->set('auth_pending_actions', array_values($actions));
-            $session->set('auth_pending_action', $actions[0]);
+        // Advance to next pending action in pipeline or finalize login
+        return $this->advancePipeline($actions, $user);
+    }
 
-            $data = new AuthResponseData(
-                action: 'action.next',
-                status: 'info',
-                statusCode: 200,
-                message: 'Next authentication action required.',
-                redirectTo: auth_url('auth.action.show'),
-                user: $user
-            );
+    /**
+     * Advance the pipeline to the next pending action, automatically skipping non-pending actions.
+     *
+     * @param array<string> $actions
+     */
+    protected function advancePipeline(array $actions, \Jengo\Auth\Entities\User $user): ResponseInterface
+    {
+        $session = Services::session();
 
-            return $this->renderResponse('action.next', $data);
+        while (! empty($actions)) {
+            $nextActionClass = $actions[0];
+
+            if (! class_exists($nextActionClass)) {
+                throw new \RuntimeException("Authentication action class [{$nextActionClass}] does not exist.");
+            }
+
+            /** @var AuthActionInterface $actionInstance */
+            $actionInstance = new $nextActionClass();
+
+            $isPending = method_exists($actionInstance, 'isPending')
+                ? $actionInstance->isPending($this->request, $user)
+                : true;
+
+            if ($isPending) {
+                $session->set('auth_pending_actions', array_values($actions));
+                $session->set('auth_pending_action', $nextActionClass);
+
+                $data = new AuthResponseData(
+                    action: 'action.next',
+                    status: 'info',
+                    statusCode: 200,
+                    message: 'Next authentication action required.',
+                    redirectTo: auth_url('auth.action.show'),
+                    user: $user
+                );
+
+                return $this->renderResponse('action.next', $data);
+            }
+
+            Events::trigger('actionSkipped', $user, $actionInstance->getActionName());
+            array_shift($actions);
         }
 
-        // All pipeline actions completed successfully: clear session and finalize login
+        return $this->finalizeLogin($user);
+    }
+
+    /**
+     * Finalize login once all pipeline actions have completed or been skipped.
+     */
+    protected function finalizeLogin(\Jengo\Auth\Entities\User $user): ResponseInterface
+    {
+        $session = Services::session();
+        $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
+
         $session->remove([$sessionKey, 'auth_pending_actions', 'auth_pending_action']);
 
         auth()->login($user);

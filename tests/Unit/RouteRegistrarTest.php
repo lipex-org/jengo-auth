@@ -251,8 +251,9 @@ class RouteRegistrarTest extends TestCase
         \Jengo\Auth\Support\RouteRegistrar::tokens($routes);
         $getRoutes = $routes->getRoutes('GET');
         $postRoutes = $routes->getRoutes('POST');
-        $this->assertArrayHasKey('api/tokens', $getRoutes);
-        $this->assertArrayHasKey('api/tokens', $postRoutes);
+        $this->assertArrayHasKey('tokens', $getRoutes);
+        $this->assertArrayHasKey('tokens', $postRoutes);
+        $this->assertArrayHasKey('tokens/create', $postRoutes);
         $this->assertArrayNotHasKey('login', $getRoutes);
     }
 }

@@ -9,7 +9,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\Contracts\ResponseModifierInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
-use Jengo\Auth\Modifiers\StandardViewModifier;
+use Jengo\Auth\Modifiers\UniversalModifier;
 use Jengo\Base\Validation\FormFailedResponseHolder;
 
 class ResponseHandler
@@ -32,7 +32,7 @@ class ResponseHandler
             return $this->modifier;
         }
 
-        $modifierClass = config('Auth')->responseModifier ?? StandardViewModifier::class;
+        $modifierClass = config('Auth')->responseModifier ?? UniversalModifier::class;
 
         return $this->modifier = new $modifierClass();
     }

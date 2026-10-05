@@ -23,6 +23,7 @@ class TokenController extends BaseAuthController
         $data = new AuthResponseData(
             action: 'tokens.list',
             status: 'success',
+            message: 'List of personal access tokens.',
             statusCode: 200,
             data: ['tokens' => $tokens],
             user: $user
@@ -54,7 +55,11 @@ class TokenController extends BaseAuthController
                 'token'       => $result->plainTextToken,
                 'accessToken' => $result->accessToken,
             ],
-            user: $user
+            flash: [
+                'token' => $result->plainTextToken,
+            ],
+            user: $user,
+            redirectTo: auth_url('tokens.index')
         );
 
         return $this->renderResponse('tokens.created', $data);

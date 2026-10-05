@@ -77,11 +77,16 @@ class RegisterController extends BaseAuthController
             return $this->renderResponse('register.validation_failed', $data);
         }
 
+        // Check if EmailActivator is part of the register pipeline
+        $configuredActions = config('Auth')->actions['register'] ?? [];
+        $actionList = is_array($configuredActions) ? $configuredActions : [$configuredActions];
+        $requiresActivation = in_array(\Jengo\Auth\Actions\EmailActivator::class, $actionList, true);
+
         // 1. Create User
         $user = new User([
             'username' => $username,
-            'active'   => 1,
-            'status'   => 'active',
+            'active'   => $requiresActivation ? 0 : 1,
+            'status'   => $requiresActivation ? 'pending' : 'active',
         ]);
         $userId = $auth->getUserModel()->insert($user);
         $user->id = (int) $userId;
@@ -104,12 +109,28 @@ class RegisterController extends BaseAuthController
         $actions = is_array($configuredActions) ? array_values(array_filter($configuredActions)) : ($configuredActions ? [$configuredActions] : []);
         $validActions = array_values(array_filter($actions, fn($c) => is_string($c) && class_exists($c)));
 
-        if ($validActions !== []) {
+        // Filter for only actions that are actually pending for this user
+        $pendingActions = [];
+        foreach ($validActions as $actionClass) {
+            /** @var \Jengo\Auth\Contracts\AuthActionInterface $actionInstance */
+            $actionInstance = new $actionClass();
+            $isPending = method_exists($actionInstance, 'isPending')
+                ? $actionInstance->isPending($this->request, $user)
+                : true;
+
+            if ($isPending) {
+                $pendingActions[] = $actionClass;
+            } else {
+                Events::trigger('actionSkipped', $user, $actionInstance->getActionName());
+            }
+        }
+
+        if ($pendingActions !== []) {
             $session = Services::session();
             $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
             $session->set($sessionKey, $user->id);
-            $session->set('auth_pending_actions', $validActions);
-            $session->set('auth_pending_action', $validActions[0]);
+            $session->set('auth_pending_actions', $pendingActions);
+            $session->set('auth_pending_action', $pendingActions[0]);
 
             $data = new AuthResponseData(
                 action: 'register.action_required',

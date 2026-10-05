@@ -5,17 +5,11 @@ declare(strict_types=1);
 namespace Jengo\Auth\Config;
 
 use CodeIgniter\Config\BaseConfig;
+use Jengo\Auth\Modifiers\InertiaModifier;
+use Jengo\Auth\Modifiers\JsonModifier;
 use Jengo\Auth\Modifiers\StandardViewModifier;
+use Jengo\Auth\Modifiers\UniversalModifier;
 use Jengo\Auth\Notifications\DefaultEmailNotifier;
-use Jengo\Auth\Controllers\{
-    LoginController,
-    RegisterController,
-    ForgotPasswordController,
-    ResetPasswordController,
-    MagicLinkController,
-    ActionController,
-    TokenController,
-};
 use Jengo\Auth\Authentication\Authenticators\{
     UniversalGuard,
     SessionGuard,
@@ -71,11 +65,20 @@ class Auth extends BaseConfig
     /**
      * The response modifier class to format controller responses.
      * Built-in options:
+     * - UniversalModifier::class (Auto-detects modifier based on request headers: Inertia, JSON, or Standard Views)
      * - StandardViewModifier::class (Traditional CI4 Views & HTML Flash redirects)
      * - JsonModifier::class (JSON REST APIs)
      * - InertiaModifier::class (Inertia.js SPA responses)
      */
-    public string $responseModifier = StandardViewModifier::class;
+    public string $responseModifier = UniversalModifier::class;
+
+    /**
+     * Modifiers used by UniversalModifier when dynamically routing responses.
+     * Can be overridden with custom modifier implementations.
+     */
+    public string $inertiaModifier = InertiaModifier::class;
+    public string $jsonModifier = JsonModifier::class;
+    public string $standardModifier = StandardViewModifier::class;
 
     /**
      * The notification sender class for sending emails, SMS, or queued notifications.
@@ -134,6 +137,7 @@ class Auth extends BaseConfig
         "action_mfa"          => "Jengo\Auth\Views\mfa_challenge",
         "sudo"                => "Jengo\Auth\Views\sudo_challenge",
         'two_factor_settings' => 'Jengo\\Auth\\Views\\two_factor_settings',
+        'tokens'              => 'Jengo\\Auth\\Views\\tokens_index',
     ];
 
     /**

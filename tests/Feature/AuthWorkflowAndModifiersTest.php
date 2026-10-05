@@ -272,6 +272,11 @@ class AuthWorkflowAndModifiersTest extends TestCase
                 return 'terms';
             }
 
+            public function isPending(\CodeIgniter\HTTP\RequestInterface $request, \Jengo\Auth\Entities\User $user): bool
+            {
+                return true;
+            }
+
             public function show(\CodeIgniter\HTTP\RequestInterface $request, \Jengo\Auth\Entities\User $user): \CodeIgniter\HTTP\ResponseInterface
             {
                 return Services::response()->setStatusCode(200)->setJSON(['action' => 'terms.view']);

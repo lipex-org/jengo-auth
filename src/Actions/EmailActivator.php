@@ -22,6 +22,11 @@ class EmailActivator implements AuthActionInterface
         return 'email_activator';
     }
 
+    public function isPending(RequestInterface $request, User $user): bool
+    {
+        return ! (bool) $user->active;
+    }
+
     public function show(RequestInterface $request, User $user): ResponseInterface
     {
         $session = Services::session();

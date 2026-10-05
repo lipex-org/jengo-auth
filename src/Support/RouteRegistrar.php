@@ -150,7 +150,7 @@ class RouteRegistrar
             'reset-password'  => 'reset-password',
             'magic-link'      => 'magic-link',
             'action'          => 'auth/action',
-            'tokens'          => 'api/tokens',
+            'tokens'          => 'tokens',
             'sudo'            => 'auth/sudo',
             'two-factor'      => 'user/two-factor',
         ];
@@ -287,13 +287,13 @@ class RouteRegistrar
         // 8. Personal Access Tokens
         if (static::isFlowEnabled('tokens', $only, $except, (bool) ($config->allowTokens ?? true))) {
             $tokenCtrl = $controllers['tokens'] ?? TokenController::class;
-            $pathTokens = trim((string) ($paths['tokens'] ?? 'api/tokens'), '/');
+            $pathTokens = trim((string) ($paths['tokens'] ?? 'tokens'), '/');
 
-            $routes->group($pathTokens, static function (RouteCollection $r) use ($tokenCtrl) {
-                $r->get('/', [$tokenCtrl, 'index'], ['as' => 'tokens.index']);
-                $r->post('/', [$tokenCtrl, 'create'], ['as' => 'tokens.create']);
-                $r->delete('(:segment)', [$tokenCtrl, 'revoke'], ['as' => 'tokens.revoke']);
-            });
+            $routes->get($pathTokens, [$tokenCtrl, 'index'], ['as' => 'tokens.index']);
+            $routes->post($pathTokens, [$tokenCtrl, 'create'], ['as' => 'tokens.create']);
+            $routes->post($pathTokens . '/create', [$tokenCtrl, 'create'], ['as' => 'tokens.create.named']);
+            $routes->delete($pathTokens . '/(:segment)', [$tokenCtrl, 'revoke'], ['as' => 'tokens.revoke']);
+            $routes->post($pathTokens . '/revoke/(:segment)', [$tokenCtrl, 'revoke'], ['as' => 'tokens.revoke.post']);
         }
     }
 
