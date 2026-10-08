@@ -1,8 +1,22 @@
-# Jengo Auth
+<p align="center">
+  <a href="https://lipex-org.github.io/jengophp.com/">
+    <img src="https://raw.githubusercontent.com/lipex-org/docs/main/public/logo-full.png" width="220" alt="Jengo Logo">
+  </a>
+</p>
 
-A unified authentication and authorization engine for CodeIgniter 4 and the Jengo Framework, powered by Vima. Features Universal Guard, multi-step MFA actions, scoped API tokens, and fine-grained RBAC/ABAC permissions.
+<h1 align="center">Jengo Auth</h1>
 
-Documentation: https://lipex-org.github.io/jengophp.com/packages/auth
+<p align="center">
+  <strong>A unified authentication and authorization engine for CodeIgniter 4 and the Jengo Framework, powered by Vima. Features Universal Guard, multi-step MFA actions, scoped API tokens, and fine-grained RBAC/ABAC permissions.</strong>
+</p>
+
+<p align="center">
+  <a href="https://lipex-org.github.io/jengophp.com/packages/auth"><strong>Documentation</strong></a> •
+  <a href="https://github.com/lipex-org/auth/blob/main/LICENSE"><strong>License</strong></a> •
+  <a href="https://github.com/lipex-org/auth/issues"><strong>Issues</strong></a>
+</p>
+
+---
 
 ## Installation
 
