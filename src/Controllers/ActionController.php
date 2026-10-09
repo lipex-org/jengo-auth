@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use Jengo\Auth\Contracts\AuthActionInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
+use Jengo\Base\Container\Container;
 
 class ActionController extends BaseAuthController
 {
@@ -37,11 +38,11 @@ class ActionController extends BaseAuthController
             }
 
             /** @var AuthActionInterface $actionInstance */
-            $actionInstance = new $currentActionClass();
+            $actionInstance = $this->resolveActionInstance($currentActionClass);
 
             // Check if action is pending
             $isPending = method_exists($actionInstance, 'isPending')
-                ? $actionInstance->isPending($this->request, $user)
+                ? $this->callActionMethod($actionInstance, 'isPending', ['request' => $this->request, 'user' => $user])
                 : true;
 
             if ($isPending) {
@@ -50,7 +51,7 @@ class ActionController extends BaseAuthController
                 $session->set('auth_pending_actions', array_values($actions));
                 $session->set('auth_pending_action', $currentActionClass);
 
-                return $actionInstance->show($this->request, $user);
+                return $this->callActionMethod($actionInstance, 'show', ['request' => $this->request, 'user' => $user]);
             }
 
             // Action is not pending; trigger actionSkipped event and shift
@@ -84,14 +85,14 @@ class ActionController extends BaseAuthController
         }
 
         /** @var AuthActionInterface $actionInstance */
-        $actionInstance = new $currentActionClass();
+        $actionInstance = $this->resolveActionInstance($currentActionClass);
 
         if (method_exists($actionInstance, 'challenge')) {
-            return $actionInstance->challenge($this->request, $user);
+            return $this->callActionMethod($actionInstance, 'challenge', ['request' => $this->request, 'user' => $user]);
         }
 
         // Fallback to show() if action does not define specific challenge logic
-        return $actionInstance->show($this->request, $user);
+        return $this->callActionMethod($actionInstance, 'show', ['request' => $this->request, 'user' => $user]);
     }
 
     /**
@@ -120,9 +121,9 @@ class ActionController extends BaseAuthController
         }
 
         /** @var AuthActionInterface $actionInstance */
-        $actionInstance = new $currentActionClass();
+        $actionInstance = $this->resolveActionInstance($currentActionClass);
 
-        $verified = $actionInstance->verify($this->request, $user);
+        $verified = (bool) $this->callActionMethod($actionInstance, 'verify', ['request' => $this->request, 'user' => $user]);
         if (! $verified) {
             // Strict 404 on failure as required
             return $this->notFoundResponse('action.failed');
@@ -155,10 +156,10 @@ class ActionController extends BaseAuthController
             }
 
             /** @var AuthActionInterface $actionInstance */
-            $actionInstance = new $nextActionClass();
+            $actionInstance = $this->resolveActionInstance($nextActionClass);
 
             $isPending = method_exists($actionInstance, 'isPending')
-                ? $actionInstance->isPending($this->request, $user)
+                ? $this->callActionMethod($actionInstance, 'isPending', ['request' => $this->request, 'user' => $user])
                 : true;
 
             if ($isPending) {
@@ -260,5 +261,21 @@ class ActionController extends BaseAuthController
         }
 
         return [$actions, $user];
+    }
+
+    /**
+     * Resolve an AuthActionInterface instance using Jengo Container if available.
+     */
+    protected function resolveActionInstance(string $actionClass): AuthActionInterface
+    {
+        return Container::getInstance()->make($actionClass);
+    }
+
+    /**
+     * Call an AuthActionInterface method using Jengo Container for auto-wiring dependencies.
+     */
+    protected function callActionMethod(AuthActionInterface $action, string $method, array $parameters = []): mixed
+    {
+        return Container::getInstance()->make([$action, $method], $parameters);
     }
 }

@@ -10,6 +10,7 @@ use Config\Services;
 use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Forms\LoginFormHandler;
 use Jengo\Base\Attributes\Validate;
+use Jengo\Base\Container\Container;
 
 class LoginController extends BaseAuthController
 {
@@ -42,9 +43,9 @@ class LoginController extends BaseAuthController
             statusCode: 200,
             message: null,
             data: [
-                'allow_magic_link'   => $allowMagicLink,
+                'allow_magic_link' => $allowMagicLink,
                 'can_reset_password' => $canResetPassword,
-                'social_providers'   => $socialProviders,
+                'social_providers' => $socialProviders,
             ]
         );
 
@@ -124,9 +125,10 @@ class LoginController extends BaseAuthController
         $pendingActions = [];
         foreach ($validActions as $actionClass) {
             /** @var \Jengo\Auth\Contracts\AuthActionInterface $actionInstance */
-            $actionInstance = new $actionClass();
+            $actionInstance = Container::getInstance()->make($actionClass);
+
             $isPending = method_exists($actionInstance, 'isPending')
-                ? $actionInstance->isPending($this->request, $user)
+                ? Container::getInstance()->call([$actionInstance, 'isPending'], ['request' => $this->request, 'user' => $user])
                 : true;
 
             if ($isPending) {

@@ -9,10 +9,13 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Support\ResponseHandler;
+use Jengo\Base\Container\Traits\HasContainer;
 use Psr\Log\LoggerInterface;
 
 abstract class BaseAuthController extends Controller
 {
+    use HasContainer;
+
     protected ResponseHandler $responseHandler;
 
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)

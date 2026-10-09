@@ -90,6 +90,21 @@ class DefaultEmailNotifier implements NotificationSenderInterface
             $htmlBody = "Hello {$user->username}, please visit: " . ($data['url'] ?? $data['code'] ?? '');
         }
 
+        // If defer() helper is available and background queueing is enabled or default, defer email dispatch
+        $queueEmails = (bool) ($authConfig->queueEmails ?? false);
+        if ($queueEmails && function_exists('defer')) {
+            defer(function () use ($fromEmail, $fromName, $emailAddress, $subject, $htmlBody) {
+                $email = \Config\Services::email();
+                $email->setFrom($fromEmail, $fromName);
+                $email->setTo($emailAddress);
+                $email->setSubject($subject);
+                $email->setMessage($htmlBody);
+                $email->setMailType('html');
+                $email->send(false);
+            });
+            return true;
+        }
+
         $email = Services::email();
         $email->setFrom($fromEmail, $fromName);
         $email->setTo($emailAddress);
