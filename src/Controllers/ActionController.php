@@ -276,6 +276,6 @@ class ActionController extends BaseAuthController
      */
     protected function callActionMethod(AuthActionInterface $action, string $method, array $parameters = []): mixed
     {
-        return Container::getInstance()->make([$action, $method], $parameters);
+        return Container::getInstance()->call([$action, $method], $parameters);
     }
 }
