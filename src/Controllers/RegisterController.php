@@ -145,10 +145,7 @@ class RegisterController extends BaseAuthController
                 statusCode: 200,
                 message: 'Registration successful. Action required.',
                 redirectTo: auth_url('auth.action.show'),
-                user: $user,
-                data: [
-                    'use_inertia_location' => true,
-                ]
+                user: $user
             );
             return $this->renderResponse('register.action_required', $data);
         }

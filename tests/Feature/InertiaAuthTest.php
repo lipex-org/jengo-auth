@@ -132,5 +132,26 @@ class InertiaAuthTest extends TestCase
         $this->assertInstanceOf(RedirectResponse::class, $loginResponse);
         $this->assertSame(302, $loginResponse->getStatusCode());
     }
+
+    public function testInertiaActionRequiredRedirectsWithoutInertiaLocation(): void
+    {
+        $modifier = new InertiaModifier();
+        $request = Services::request();
+        $request->setHeader('X-Inertia', 'true');
+
+        $actionRequiredData = new \Jengo\Auth\DTOs\AuthResponseData(
+            action: 'login.action_required',
+            status: 'info',
+            statusCode: 200,
+            message: 'Additional authentication action required.',
+            redirectTo: '/auth/action/show'
+        );
+
+        $response = $modifier->modify('login.action_required', $actionRequiredData, $request);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertStringEndsWith('/auth/action/show', $response->getHeaderLine('Location'));
+    }
 }
 

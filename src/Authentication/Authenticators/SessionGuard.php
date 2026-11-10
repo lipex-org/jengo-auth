@@ -127,7 +127,7 @@ class SessionGuard implements GuardInterface
         }
     }
 
-    public function logout(): void
+    public function logout(bool $regenerate = true): void
     {
         $userId = $this->user?->id ?? Services::session()->get($this->sessionKey);
         if ($userId) {
@@ -141,7 +141,7 @@ class SessionGuard implements GuardInterface
 
         $session = Services::session();
         $session->remove($this->sessionKey);
-        if (session_status() === PHP_SESSION_ACTIVE) {
+        if ($regenerate && session_status() === PHP_SESSION_ACTIVE) {
             $session->regenerate();
         }
 

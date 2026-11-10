@@ -21,7 +21,6 @@ class AuthFilter implements FilterInterface
     {
         $auth = Services::auth();
 
-
         // Explicite guard check via filter arguments takes precedence over controller attributes
         // Standard filter route check: only check guard if explicitly specified in arguments
         $guardName = $arguments[0] ?? null;
@@ -30,7 +29,7 @@ class AuthFilter implements FilterInterface
             $guard = $auth->guard($guardName);
 
             // Since the guard is explicitly specified (and validated), we must check for pending actions here 
-            // and redirect before checking for authetication. This is because the user may be logged in but 
+            // and redirect before checking for authentication. This is because the user may be logged in but 
             // still have pending actions to complete (e.g. MFA, Terms, etc.)
             if ($auth->hasPendingActions()) {
                 return redirect()->to(auth_url('auth.action.show'));
@@ -97,7 +96,7 @@ class AuthFilter implements FilterInterface
             $guard = $instance->guard ? $auth->guard($instance->guard) : $auth->guard();
 
             // Since the auth attribute is present, then we must check for pending actions here 
-            // and redirect before checking for authetication. This is because the user may be 
+            // and redirect before checking for authentication. This is because the user may be 
             // logged in but still have pending actions to complete (e.g. MFA, Terms, etc.)
             if ($auth->hasPendingActions()) {
                 return redirect()->to(auth_url('auth.action.show'));
@@ -116,6 +115,10 @@ class AuthFilter implements FilterInterface
         }
 
         if ($roleAttr !== null) {
+            if ($auth->hasPendingActions()) {
+                return redirect()->to(auth_url('auth.action.show'));
+            }
+
             if (!$auth->check()) {
                 return $this->unauthorizedResponse($request);
             }
@@ -141,6 +144,10 @@ class AuthFilter implements FilterInterface
             $canAttr = $refMethod->getAttributes(Can::class)[0] ?? null;
 
             if ($canAttr !== null) {
+                if ($auth->hasPendingActions()) {
+                    return redirect()->to(auth_url('auth.action.show'));
+                }
+
                 if (!$auth->check()) {
                     return $this->unauthorizedResponse($request);
                 }
