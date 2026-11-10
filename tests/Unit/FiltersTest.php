@@ -201,4 +201,26 @@ class FiltersTest extends TestCase
         $superAllowed = $filter->before($webRequest, ['custom_role']);
         $this->assertNull($superAllowed);
     }
+
+    public function testAuthFilterRedirectsToPendingActionWhenGuarded(): void
+    {
+        $filter = new AuthFilter();
+        $session = Services::session();
+        $session->set('auth_pending_user_id', 1);
+        $session->set('auth_pending_actions', ['SomeAction']);
+
+        $webRequest = $this->createRequest('http://localhost/dashboard');
+
+        // 1. Guarded with explicit guardName redirects to action show
+        $response = $filter->before($webRequest, ['session']);
+        $this->assertInstanceOf(\CodeIgniter\HTTP\RedirectResponse::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertStringContainsString('action/show', $response->getHeaderLine('Location'));
+
+        // 2. Unguarded / unannotated route does not loop or redirect
+        $unannotated = $filter->before($webRequest, null);
+        $this->assertNull($unannotated);
+
+        $session->remove(['auth_pending_user_id', 'auth_pending_actions']);
+    }
 }

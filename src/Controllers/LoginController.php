@@ -11,6 +11,7 @@ use Jengo\Auth\DTOs\AuthResponseData;
 use Jengo\Auth\Forms\LoginFormHandler;
 use Jengo\Base\Attributes\Validate;
 use Jengo\Base\Container\Container;
+use Jengo\Auth\Support\RouteRegistrar;
 
 class LoginController extends BaseAuthController
 {
@@ -31,9 +32,9 @@ class LoginController extends BaseAuthController
             return redirect()->to(auth_redirect_url('login', '/'));
         }
 
-        $allowMagicLink = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('magic-link');
-        $canResetPassword = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('password-reset');
-        $socialProviders = \Jengo\Auth\Support\RouteRegistrar::isFlowPublished('social')
+        $allowMagicLink = RouteRegistrar::isFlowPublished('magic-link');
+        $canResetPassword = RouteRegistrar::isFlowPublished('password-reset');
+        $socialProviders = RouteRegistrar::isFlowPublished('social')
             ? Services::social()->getAvailableProviders()
             : [];
 
@@ -139,8 +140,12 @@ class LoginController extends BaseAuthController
         }
 
         if ($pendingActions !== []) {
-            // Un-authenticate from main session guard while preserving pending action keys
-            $auth->guard()->logout();
+            // Un-authenticate from main session guard while preserving pending action keys (without secondary session regeneration)
+            if (method_exists($auth->guard(), 'logout')) {
+                $auth->guard()->logout(false);
+            } else {
+                $auth->guard()->logout();
+            }
 
             $session = Services::session();
             $sessionKey = config('Auth')->session['pendingUserKey'] ?? 'auth_pending_user_id';
@@ -154,10 +159,7 @@ class LoginController extends BaseAuthController
                 statusCode: 200,
                 message: 'Additional authentication action required.',
                 redirectTo: auth_url('auth.action.show'),
-                user: $user,
-                data: [
-                    'use_inertia_location' => true,
-                ]
+                user: $user
             );
             return $this->renderResponse('login.action_required', $data);
         }

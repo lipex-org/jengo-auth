@@ -246,10 +246,14 @@ class AuthManager
     /**
      * Log out current user and clear any pending action state.
      */
-    public function logout(): void
+    public function logout(bool $regenerate = true): void
     {
         $this->cancelPendingActions();
-        $this->guard()->logout();
+        if (method_exists($this->guard(), 'logout')) {
+            $this->guard()->logout($regenerate);
+        } else {
+            $this->guard()->logout();
+        }
     }
 
     /**

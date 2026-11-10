@@ -91,10 +91,10 @@ class UniversalGuard implements GuardInterface
         $this->tokenGuard->setUser($user);
     }
 
-    public function logout(): void
+    public function logout(bool $regenerate = true): void
     {
         $this->tokenGuard->logout();
-        $this->sessionGuard->logout();
+        $this->sessionGuard->logout($regenerate);
         $this->activeGuard = null;
     }
 
